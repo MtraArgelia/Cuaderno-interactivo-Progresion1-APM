@@ -417,10 +417,12 @@
 <div class="screen" id="screen-teacher-dashboard">
   <div class="wrap">
     <div class="wb-header">
-      <div class="who">Panel docente — <b id="tdName">—</b></div>
+      <div class="who">Panel docente — <b id="tdName">—</b>
+        <span id="captureStatusPill" class="pill" style="margin-left:10px;">Verificando estado…</span>
+      </div>
       <button class="linkbtn" onclick="logout()">Cerrar sesión</button>
     </div>
-    <div class="note-banner">Los datos se leen y guardan en tu hoja de Google Sheets. El listado de estudiantes se administra directamente ahí, no desde esta app.</div>
+    <div class="note-banner">Los datos se leen y guardan en tu hoja de Google Sheets. El listado de estudiantes se administra directamente ahí, no desde esta app. El candado de captura (Abierto/Cerrado) se controla desde la hoja "Configuracion".</div>
     <table>
       <thead><tr><th>Estudiante</th><th>Grupo</th><th>Progreso general</th><th>Última actividad</th></tr></thead>
       <tbody id="progressTableBody"></tbody>
@@ -439,7 +441,7 @@ const IMG_EJEMPLO_GRAFICA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlIAA
 
 /* ============================= CONFIGURACIÓN DE GOOGLE SHEETS ============================= */
 // TODO: Pega aquí mañana la URL de tu Apps Script (termina en /exec)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5Nlt2vOUL7tD7K2gd-WqJ2TK3IQM4rAvHrQPv1pnYpcBQq70PF-3pBa3Tw6F4oVSf/exec";
+const APPS_SCRIPT_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT";
 
 async function callAppsScript(action, payload){
   if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PEGA_AQUI') !== -1){
@@ -464,7 +466,43 @@ async function getProgress(email){
 }
 async function saveProgress(email, data){
   const r = await callAppsScript('saveProgress', { email, data });
-  return !!(r && r.ok);
+  return r || { ok:false };
+}
+
+/* ============================= CANDADO DE FECHAS (ABIERTO/CERRADO) ============================= */
+function handleSaveResult(res){
+  if(res && res.ok){ toast('Guardado ✓'); return; }
+  if(res && res.closed){ showCaptureClosedBanner(res.error); return; }
+  toast('No se pudo guardar, intenta de nuevo');
+}
+
+function showCaptureClosedBanner(msg){
+  let banner = document.getElementById('captureClosedBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'captureClosedBanner';
+    banner.className = 'note-banner';
+    banner.style.background = '#FBEAEA';
+    banner.style.borderColor = 'var(--red)';
+    banner.style.color = '#7a1f1f';
+    const wrap = document.querySelector('#screen-student-workbook .wrap');
+    if(wrap) wrap.insertBefore(banner, wrap.firstChild);
+  }
+  banner.textContent = '🔒 ' + (msg || 'El periodo de captura está cerrado.');
+  disableAllWorkbookInputs();
+}
+
+function disableAllWorkbookInputs(){
+  document.querySelectorAll('#workbookContent input, #workbookContent textarea, #workbookContent .btn-submit-section').forEach(el=>{
+    el.disabled = true;
+  });
+}
+
+async function checkCaptureStatus(){
+  const r = await callAppsScript('getConfig', {});
+  if(r && r.ok && r.open === false){
+    showCaptureClosedBanner('El periodo de captura está cerrado. Puedes ver tus respuestas guardadas, pero no se aceptarán cambios nuevos.');
+  }
 }
 
 /* ============================= APP STATE ============================= */
@@ -483,6 +521,8 @@ function logout(){
   currentStudent = null; currentTeacher = null; currentProgress = null;
   document.getElementById('sEmail').value=''; document.getElementById('sPass').value='';
   document.getElementById('tEmail').value=''; document.getElementById('tPass').value='';
+  const banner = document.getElementById('captureClosedBanner');
+  if(banner) banner.remove();
   showScreen('screen-role');
 }
 
@@ -516,6 +556,7 @@ async function studentLogin(){
   document.getElementById('wbGroup').textContent = currentStudent.group || '—';
   renderWorkbook();
   showScreen('screen-student-workbook');
+  checkCaptureStatus();
 }
 
 /* ============================= TEACHER LOGIN ============================= */
@@ -531,6 +572,20 @@ async function teacherLogin(){
   document.getElementById('tdName').textContent = currentTeacher.name;
   showScreen('screen-teacher-dashboard');
   await renderProgressTable();
+  await renderCaptureStatusPill();
+}
+
+async function renderCaptureStatusPill(){
+  const pill = document.getElementById('captureStatusPill');
+  if(!pill) return;
+  const r = await callAppsScript('getConfig', {});
+  if(r && r.ok){
+    pill.textContent = r.open ? 'Captura: Abierta ✅' : 'Captura: Cerrada 🔒';
+    pill.className = 'pill ' + (r.open ? 'pill-ok' : 'pill-low');
+  } else {
+    pill.textContent = 'Estado no disponible';
+    pill.className = 'pill pill-mid';
+  }
 }
 
 function pct(obj, total){
@@ -884,7 +939,7 @@ function renderDiagnostico(){
   </div>
   <div class="question">
     <div class="qtext">3. Calcula: 24 ÷ 6 =</div>
-    <input type="text" data-section="diag" data-id="a3" data-type="numeric" data-correct="6">
+    <input type="text" data-section="diag" data-id="a3" data-type="numeric" data-correct="4">
     <div class="feedback" id="fb-diag-a3"></div>
   </div>
   <div class="question">
@@ -1014,7 +1069,8 @@ function renderTema11(){
 const T12_QUESTIONS = [
   {level:1, id:'t12_obj', short:'N1 · Objeto elástico usado', type:'open'},
   {level:1, id:'t12_fuerza', short:'N1 · Qué pasa al jalar con más fuerza', type:'keywords'},
-  {level:1, id:'t12_regresa', short:'N1 · ¿Regresa a su forma original?', type:'open'},
+  {level:1, id:'t12_regresa', short:'N1 · ¿Regresa a su forma original?', type:'choice'},
+  {level:1, id:'t12_regresa_caso', short:'N1 · Caso contrario (razonamiento)', type:'open'},
   {level:2, id:'t12_descripcion', short:'N2 · Descripción técnica del fenómeno', type:'keywords'},
   {level:3, id:'t12_obj1', short:'N3 · Objeto elástico 1', type:'open'},
   {level:3, id:'t12_fuerza1', short:'N3 · Fuerza aplicada 1', type:'open'},
@@ -1048,7 +1104,17 @@ function renderTema12(){
     <input type="text" data-section="t12" data-id="t12_fuerza" data-type="keywords" data-groups='[["estira","alarga","estirar"],["mas","mayor"]]' data-minlength="4">
     <div class="feedback" id="fb-t12-t12_fuerza"></div></div>
   <div class="question"><div class="qtext">¿El objeto regresa a su forma original al soltarlo?</div>
-    <input type="text" data-section="t12" data-id="t12_regresa" data-type="open"><div class="feedback" id="fb-t12-t12_regresa"></div></div>
+    <div class="options">
+      <label><input type="radio" name="t12-regresa" data-section="t12" data-id="t12_regresa" data-type="choice" data-correct="si" value="si" onchange="toggleRegresaFollowup('si')"> Sí</label>
+      <label><input type="radio" name="t12-regresa" data-section="t12" data-id="t12_regresa" data-type="choice" data-correct="si" value="no" onchange="toggleRegresaFollowup('no')"> No</label>
+    </div>
+    <div class="feedback" id="fb-t12-t12_regresa"></div>
+    <div class="followup-block" id="followup-t12_regresa" style="display:none; margin-top:14px;">
+      <div class="qtext" id="followup-label-t12_regresa"></div>
+      <textarea data-section="t12" data-id="t12_regresa_caso" data-type="open" placeholder="Escribe tu respuesta..."></textarea>
+      <div class="feedback" id="fb-t12-t12_regresa_caso"></div>
+    </div>
+  </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Describe el fenómeno con lenguaje técnico</span></div></div>
   <p class="hint">Redacta una descripción técnica y ordenada del fenómeno del resorte usando correctamente los términos: longitud natural, masa, fuerza (peso), alargamiento, soporte fijo.</p>
@@ -1670,6 +1736,16 @@ function buildRubricRow(criterio, desc, maxPts, qid, isLast){
 }
 
 /* ============================= BIND + SAVE ============================= */
+function toggleRegresaFollowup(value){
+  const block = document.getElementById('followup-t12_regresa');
+  const label = document.getElementById('followup-label-t12_regresa');
+  if(!block || !label) return;
+  block.style.display = 'block';
+  label.textContent = value === 'si'
+    ? '¿En qué caso ese mismo objeto NO regresaría a su forma original?'
+    : '¿En qué caso ese mismo objeto SÍ regresaría a su forma original?';
+}
+
 function bindInputsWithin(root){
   // restore saved values
   root.querySelectorAll('[data-section]').forEach(inputEl=>{
@@ -1682,7 +1758,12 @@ function bindInputsWithin(root){
         showFeedback(section, id, saved.status);
         return;
       }
-      if(inputEl.type==='radio'){ if(inputEl.value===saved.value) inputEl.checked = true; }
+      if(inputEl.type==='radio'){
+        if(inputEl.value===saved.value){
+          inputEl.checked = true;
+          if(id==='t12_regresa') toggleRegresaFollowup(saved.value);
+        }
+      }
       else if(inputEl.type==='checkbox'){ inputEl.checked = saved.value==='true'; }
       else{ inputEl.value = saved.value; }
       applyStatusClass(inputEl, saved.status);
@@ -1729,8 +1810,10 @@ function handleImageUpload(inputEl){
       if(preview){ preview.src = dataUrl; preview.style.display = 'block'; }
       showFeedback(section, id, 'registrado');
       updateProgressBar();
-      const ok = await saveProgress(currentStudent.email, currentProgress);
-      toast(ok ? 'Imagen guardada ✓' : 'No se pudo guardar la imagen, intenta con una más ligera');
+      const res = await saveProgress(currentStudent.email, currentProgress);
+      if(res && res.ok){ toast('Imagen guardada ✓'); }
+      else if(res && res.closed){ showCaptureClosedBanner(res.error); }
+      else { toast('No se pudo guardar la imagen, intenta con una más ligera'); }
     };
     img.onerror = ()=>{ alert('No pude leer esa imagen, intenta con otro archivo.'); };
     img.src = e.target.result;
@@ -1778,7 +1861,7 @@ function handleAnswer(inputEl){
   applyStatusClass(inputEl, status);
   showFeedback(section, id, status);
   updateProgressBar();
-  saveProgress(currentStudent.email, currentProgress).then(()=>toast());
+  saveProgress(currentStudent.email, currentProgress).then(handleSaveResult);
 }
 
 function applyStatusClass(inputEl, status){
@@ -1856,16 +1939,19 @@ async function submitSection(section){
   if(!currentProgress.meta) currentProgress.meta = {};
   currentProgress.meta.lastUpdated = Date.now();
 
-  const ok = await saveProgress(currentStudent.email, currentProgress);
-  toast(ok ? 'Respuestas enviadas ✓' : 'No se pudo enviar, intenta de nuevo');
+  const res = await saveProgress(currentStudent.email, currentProgress);
   updateProgressBar();
 
   const resultEl = document.getElementById('submit-result-'+section);
   if(resultEl){
     const detail = [1,2,3,4].map(L=>`N${L}: ${Math.round(levelFraction[L]*100)}%`).join(' · ');
     const badgeColor = achieved>=3 ? 'var(--ok)' : achieved>=1 ? 'var(--warn)' : 'var(--red)';
+    let extra = '';
+    if(res && res.ok){ toast('Respuestas enviadas ✓'); }
+    else if(res && res.closed){ showCaptureClosedBanner(res.error); extra = '<div class="hint" style="color:var(--red); margin-top:4px;">⚠ Esto NO se guardó: el periodo de captura está cerrado.</div>'; }
+    else { toast('No se pudo enviar, intenta de nuevo'); extra = '<div class="hint" style="color:var(--red); margin-top:4px;">⚠ No se pudo guardar en este momento.</div>'; }
     resultEl.innerHTML = `<span class="level-badge-result" style="background:${badgeColor};">Nivel alcanzado: ${achieved} de 4</span>
-      <div class="hint" style="margin-top:8px;">${detail}</div>`;
+      <div class="hint" style="margin-top:8px;">${detail}</div>${extra}`;
   }
 }
 
@@ -1978,8 +2064,12 @@ async function resetInstrument(){
   if(!currentStudent) return;
   const sure = confirm('¿Seguro que quieres reiniciar? Se borrarán TODAS tus respuestas guardadas de este cuadernillo. Esta acción no se puede deshacer.');
   if(!sure) return;
-  const ok = await callAppsScript('resetProgress', { email: currentStudent.email });
-  if(!ok || !ok.ok){ alert('No se pudo reiniciar. Intenta de nuevo.'); return; }
+  const res = await callAppsScript('resetProgress', { email: currentStudent.email });
+  if(!res || !res.ok){
+    if(res && res.closed){ showCaptureClosedBanner(res.error); }
+    else { alert('No se pudo reiniciar. Intenta de nuevo.'); }
+    return;
+  }
   currentProgress = { diag:{}, t11:{}, meta:{} };
   renderWorkbook();
   toast('Cuadernillo reiniciado');
