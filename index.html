@@ -93,6 +93,18 @@
   .wb-nav-btn:hover{ background:#F5F2E9; }
   .wb-nav-btn.active{ color:var(--navy); border-bottom-color:var(--navy); background:#fff; }
 
+  .wb-nav-btn{ position:relative; padding-bottom:16px; }
+  .nav-progress-track{ position:absolute; left:8px; right:8px; bottom:4px; height:3px; background:#E4DCC8; border-radius:2px; overflow:hidden; }
+  .nav-progress-fill{ display:block; height:100%; width:0%; background:var(--teal); transition:width .3s; }
+  .nav-progress-fill.complete{ background:var(--ok); }
+  .temas-submenu button{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .nav-badge{
+    font-size:.72rem; font-weight:700; color:#fff; background:var(--teal); border-radius:10px;
+    padding:2px 8px; flex-shrink:0; min-width:34px; text-align:center;
+  }
+  .nav-badge.complete{ background:var(--ok); }
+  .nav-badge.empty{ background:#C7CDBE; color:#5a6a54; }
+
   .wb-nav-group{ position:relative; flex:1; min-width:95px; }
   .wb-nav-group .wb-nav-btn{ width:100%; }
   .temas-submenu{
@@ -391,23 +403,41 @@
     <div class="note-banner">Este cuaderno guarda tus respuestas automáticamente. Tu docente podrá ver tu avance y tus respuestas.</div>
     <div class="progress-shell"><div class="progress-fill" id="progressFill"></div></div>
     <div class="wb-nav" id="wbNav">
-      <button class="wb-nav-btn active" data-target="diag" onclick="switchWorkbookSection('diag')">Diagnóstico</button>
-      <button class="wb-nav-btn" data-target="repaso" onclick="switchWorkbookSection('repaso')">Repaso</button>
+      <button class="wb-nav-btn active" data-target="diag" onclick="switchWorkbookSection('diag')">
+        Diagnóstico
+        <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-diag"></span></span>
+      </button>
+      <button class="wb-nav-btn" data-target="repaso" onclick="switchWorkbookSection('repaso')">
+        Repaso
+        <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-repaso"></span></span>
+      </button>
       <div class="wb-nav-group">
-        <button class="wb-nav-btn" id="temasToggleBtn" onclick="toggleTemasMenu(event)">Temas ▾</button>
+        <button class="wb-nav-btn" id="temasToggleBtn" onclick="toggleTemasMenu(event)">
+          Temas ▾
+          <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-temas"></span></span>
+        </button>
         <div class="temas-submenu" id="temasSubmenu">
-          <button data-target="t11" onclick="selectTema('t11')">1.1 · La matemática de la física</button>
-          <button data-target="t12" onclick="selectTema('t12')">1.2 · Observar y describir el fenómeno</button>
-          <button data-target="t13" onclick="selectTema('t13')">1.3 · Tipos de variables</button>
-          <button data-target="t14" onclick="selectTema('t14')">1.4 · Plantear una hipótesis</button>
-          <button data-target="t15" onclick="selectTema('t15')">1.5 · Registrar datos</button>
-          <button data-target="t16" onclick="selectTema('t16')">1.6 · Mediciones confiables</button>
-          <button data-target="t17" onclick="selectTema('t17')">1.7 · Análisis de los datos</button>
+          <button data-target="t11" onclick="selectTema('t11')"><span>1.1 · La matemática de la física</span><span class="nav-badge" id="navbadge-t11"></span></button>
+          <button data-target="t12" onclick="selectTema('t12')"><span>1.2 · Observar y describir el fenómeno</span><span class="nav-badge" id="navbadge-t12"></span></button>
+          <button data-target="t13" onclick="selectTema('t13')"><span>1.3 · Tipos de variables</span><span class="nav-badge" id="navbadge-t13"></span></button>
+          <button data-target="t14" onclick="selectTema('t14')"><span>1.4 · Plantear una hipótesis</span><span class="nav-badge" id="navbadge-t14"></span></button>
+          <button data-target="t15" onclick="selectTema('t15')"><span>1.5 · Registrar datos</span><span class="nav-badge" id="navbadge-t15"></span></button>
+          <button data-target="t16" onclick="selectTema('t16')"><span>1.6 · Mediciones confiables</span><span class="nav-badge" id="navbadge-t16"></span></button>
+          <button data-target="t17" onclick="selectTema('t17')"><span>1.7 · Análisis de los datos</span><span class="nav-badge" id="navbadge-t17"></span></button>
         </div>
       </div>
-      <button class="wb-nav-btn" data-target="autoeval" onclick="switchWorkbookSection('autoeval')">Autoevaluación</button>
-      <button class="wb-nav-btn" data-target="coeval" onclick="switchWorkbookSection('coeval')">Coevaluación</button>
-      <button class="wb-nav-btn" data-target="sumativa" onclick="switchWorkbookSection('sumativa')">Sumativa</button>
+      <button class="wb-nav-btn" data-target="autoeval" onclick="switchWorkbookSection('autoeval')">
+        Autoevaluación
+        <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-autoeval"></span></span>
+      </button>
+      <button class="wb-nav-btn" data-target="coeval" onclick="switchWorkbookSection('coeval')">
+        Coevaluación
+        <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-coeval"></span></span>
+      </button>
+      <button class="wb-nav-btn" data-target="sumativa" onclick="switchWorkbookSection('sumativa')">
+        Sumativa
+        <span class="nav-progress-track"><span class="nav-progress-fill" id="navfill-sumativa"></span></span>
+      </button>
     </div>
     <div id="workbookContent"></div>
   </div>
@@ -441,7 +471,7 @@ const IMG_EJEMPLO_GRAFICA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlIAA
 
 /* ============================= CONFIGURACIÓN DE GOOGLE SHEETS ============================= */
 // TODO: Pega aquí mañana la URL de tu Apps Script (termina en /exec)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5Nlt2vOUL7tD7K2gd-WqJ2TK3IQM4rAvHrQPv1pnYpcBQq70PF-3pBa3Tw6F4oVSf/exec";
+const APPS_SCRIPT_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT";
 
 async function callAppsScript(action, payload){
   if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PEGA_AQUI') !== -1){
@@ -1805,11 +1835,13 @@ function handleImageUpload(inputEl){
       currentProgress[section][id] = {value: dataUrl, status: 'registrado', ...(existingBest ? {bestStatus: existingBest} : {})};
       if(!currentProgress.meta) currentProgress.meta = {};
       currentProgress.meta.lastUpdated = Date.now();
+      updateObservedLevel(section);
 
       const preview = document.getElementById('preview-'+section+'-'+id);
       if(preview){ preview.src = dataUrl; preview.style.display = 'block'; }
       showFeedback(section, id, 'registrado');
       updateProgressBar();
+      currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
       const res = await saveProgress(currentStudent.email, currentProgress);
       if(res && res.ok){ toast('Imagen guardada ✓'); }
       else if(res && res.closed){ showCaptureClosedBanner(res.error); }
@@ -1857,10 +1889,12 @@ function handleAnswer(inputEl){
   currentProgress[section][id] = {value, status, ...(existingBest ? {bestStatus: existingBest} : {})};
   if(!currentProgress.meta) currentProgress.meta = {};
   currentProgress.meta.lastUpdated = Date.now();
+  updateObservedLevel(section);
 
   applyStatusClass(inputEl, status);
   showFeedback(section, id, status);
   updateProgressBar();
+  currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
   saveProgress(currentStudent.email, currentProgress).then(handleSaveResult);
 }
 
@@ -1872,6 +1906,10 @@ function applyStatusClass(inputEl, status){
 }
 
 /* ============================= ENVÍO POR SECCIÓN Y NIVELES (EVALUACIÓN FORMATIVA) ============================= */
+const ALL_SECTIONS_TOTALS = {
+  diag:DIAG_TOTAL, repaso:REPASO_TOTAL, t11:T11_TOTAL, t12:T12_TOTAL, t13:T13_TOTAL, t14:T14_TOTAL,
+  t15:T15_TOTAL, t16:T16_TOTAL, t17:T17_TOTAL, autoeval:AUTOEVAL_TOTAL, coeval:COEVAL_TOTAL, sumativa:SUMATIVA_TOTAL,
+};
 const QUESTIONS_BY_SECTION = {
   t11:T11_QUESTIONS, t12:T12_QUESTIONS, t13:T13_QUESTIONS, t14:T14_QUESTIONS,
   t15:T15_QUESTIONS, t16:T16_QUESTIONS, t17:T17_QUESTIONS,
@@ -1898,6 +1936,55 @@ function buildSubmitBlock(section){
   </div>`;
 }
 
+function computeLevelFractions(section, statusGetter){
+  const questions = QUESTIONS_BY_SECTION[section];
+  if(!questions) return null;
+  const byLevel = {1:[],2:[],3:[],4:[]};
+  questions.forEach(q=>{ byLevel[q.level].push(q); });
+  const levelFraction = {};
+  [1,2,3,4].forEach(L=>{
+    const qs = byLevel[L];
+    if(qs.length===0){ levelFraction[L] = 1; return; }
+    const passCount = qs.filter(q=>{
+      const st = statusGetter(section, q);
+      return st==='correcto' || st==='registrado';
+    }).length;
+    levelFraction[L] = passCount / qs.length;
+  });
+  let achieved = 0;
+  for(let L=1; L<=4; L++){
+    if(levelFraction[L] >= LEVEL_PASS_THRESHOLD){ achieved = L; } else { break; }
+  }
+  return { achieved, levelFraction };
+}
+function bestStatusGetter_(section, q){
+  const a = currentProgress[section] && currentProgress[section][q.id];
+  return a ? (a.bestStatus || null) : null;
+}
+function liveStatusGetter_(section, q){
+  return effectiveStatusFor(section, q);
+}
+
+// Se recalcula solo (sin necesidad del botón "Enviar") cada vez que el estudiante responde algo
+// en un tema. Es el que alimenta las hojas de lectura en Sheets para que el docente vea el
+// avance real en todo momento, aunque el estudiante todavía no haya dado clic en "Enviar".
+function updateObservedLevel(section){
+  if(TOPIC_SECTIONS.indexOf(section)===-1) return;
+  const result = computeLevelFractions(section, liveStatusGetter_);
+  if(!result) return;
+  if(!currentProgress.observedLevels) currentProgress.observedLevels = {};
+  currentProgress.observedLevels[section] = {
+    achieved: result.achieved,
+    levelPct: {
+      1: Math.round(result.levelFraction[1]*100), 2: Math.round(result.levelFraction[2]*100),
+      3: Math.round(result.levelFraction[3]*100), 4: Math.round(result.levelFraction[4]*100),
+    }
+  };
+  if(!currentProgress.meta) currentProgress.meta = {};
+  if(!currentProgress.meta.sectionUpdated) currentProgress.meta.sectionUpdated = {};
+  currentProgress.meta.sectionUpdated[section] = Date.now();
+}
+
 async function submitSection(section){
   const questions = QUESTIONS_BY_SECTION[section];
   if(!questions) return;
@@ -1915,22 +2002,7 @@ async function submitSection(section){
   });
 
   // 2) Calcula el nivel alcanzado (secuencial: se detiene en el primer nivel que no llega al umbral)
-  const byLevel = {1:[],2:[],3:[],4:[]};
-  questions.forEach(q=>{ byLevel[q.level].push(q); });
-  const levelFraction = {};
-  [1,2,3,4].forEach(L=>{
-    const qs = byLevel[L];
-    if(qs.length===0){ levelFraction[L] = 1; return; }
-    const passCount = qs.filter(q=>{
-      const a = currentProgress[section][q.id];
-      return a && a.bestStatus && (a.bestStatus==='correcto' || a.bestStatus==='registrado');
-    }).length;
-    levelFraction[L] = passCount / qs.length;
-  });
-  let achieved = 0;
-  for(let L=1; L<=4; L++){
-    if(levelFraction[L] >= LEVEL_PASS_THRESHOLD){ achieved = L; } else { break; }
-  }
+  const { achieved, levelFraction } = computeLevelFractions(section, bestStatusGetter_);
 
   if(!currentProgress.levels) currentProgress.levels = {};
   currentProgress.levels[section] = achieved;
@@ -1938,6 +2010,8 @@ async function submitSection(section){
   currentProgress.submitted[section] = Date.now();
   if(!currentProgress.meta) currentProgress.meta = {};
   currentProgress.meta.lastUpdated = Date.now();
+  updateObservedLevel(section);
+  currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
 
   const res = await saveProgress(currentStudent.email, currentProgress);
   updateProgressBar();
@@ -1982,6 +2056,34 @@ function updateProgressBar(){
   const p = computeOverallProgress(currentProgress);
   document.getElementById('progressFill').style.width = p+'%';
   updateCaratula(currentProgress, p);
+  updateNavProgress();
+}
+
+function updateNavProgress(){
+  Object.keys(ALL_SECTIONS_TOTALS).forEach(sec=>{
+    const total = ALL_SECTIONS_TOTALS[sec];
+    const answered = Object.keys(currentProgress[sec]||{}).length;
+    const pct = total>0 ? Math.round((answered/total)*100) : 0;
+    const fillEl = document.getElementById('navfill-'+sec);
+    if(fillEl){ fillEl.style.width = pct+'%'; fillEl.classList.toggle('complete', pct>=100); }
+    const badgeEl = document.getElementById('navbadge-'+sec);
+    if(badgeEl){
+      badgeEl.textContent = answered+'/'+total;
+      badgeEl.classList.toggle('complete', pct>=100);
+      badgeEl.classList.toggle('empty', answered===0);
+    }
+  });
+  let topicAnswered=0, topicTotal=0;
+  TOPIC_SECTIONS.forEach(sec=>{
+    topicTotal += ALL_SECTIONS_TOTALS[sec];
+    topicAnswered += Object.keys(currentProgress[sec]||{}).length;
+  });
+  const temasFill = document.getElementById('navfill-temas');
+  if(temasFill){
+    const pct = topicTotal>0 ? Math.round((topicAnswered/topicTotal)*100) : 0;
+    temasFill.style.width = pct+'%';
+    temasFill.classList.toggle('complete', pct>=100);
+  }
 }
 
 function computeStatusBreakdown(prog){
