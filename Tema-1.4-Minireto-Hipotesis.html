@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>¿Cómo piensan los científicos antes de experimentar? · Tema 1.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF6EC;
+    --paper-2:#F3ECDD;
+    --ink:#1E2A44;
+    --ink-soft:#4A5570;
+    --teal:#12897A;
+    --teal-bg:#DFF2EE;
+    --teal-line:#9FD6CB;
+    --coral:#E1552F;
+    --coral-bg:#FCE7DF;
+    --coral-line:#F3B79E;
+    --purple:#6C58A8;
+    --purple-bg:#EBE6F6;
+    --purple-line:#C6B8E8;
+    --gold:#EFA23A;
+    --white:#FFFFFF;
+    --shadow: 0 6px 0 rgba(30,42,68,0.10);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Nunito Sans', sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Baloo 2', sans-serif;color:var(--ink);margin:0;}
+
+  /* ---------- DECK SHELL ---------- */
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+  .deck{position:relative;flex:1 1 auto;overflow:hidden;}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:28px 22px 22px;
+    opacity:0;transform:translateX(28px);pointer-events:none;
+    transition:opacity .38s ease, transform .38s ease;
+    overflow-y:auto;
+  }
+  .slide.active{opacity:1;transform:translateX(0);pointer-events:auto;}
+  .slide.leaving-left{transform:translateX(-28px);}
+  .slide-inner{max-width:640px;width:100%;margin-left:auto;margin-right:auto;margin-top:auto;margin-bottom:auto;}
+
+  /* ---------- HERO SLIDE ---------- */
+  .slide-hero{
+    background:
+      radial-gradient(circle at 15% 20%, rgba(239,162,58,0.18), transparent 45%),
+      radial-gradient(circle at 85% 0%, rgba(18,137,122,0.16), transparent 40%),
+      var(--ink);
+  }
+  .slide-hero .slide-inner{text-align:center;}
+  .kicker{font-size:0.9rem;letter-spacing:0.02em;color:#C9D3E8;margin-bottom:10px;font-weight:700;}
+  .slide-hero h1{color:var(--paper);font-size:clamp(1.35rem, 5vw, 2.1rem);font-weight:700;max-width:18ch;margin:0 auto 14px;line-height:1.18;}
+  .slide-hero p{max-width:48ch;margin:0 auto;color:#DCE3F2;font-size:1rem;}
+  .icons{display:flex;justify-content:center;gap:22px;margin-top:26px;font-size:1.8rem;}
+  .icons span{display:inline-block;animation: float 3.2s ease-in-out infinite;}
+  .icons span:nth-child(2){animation-delay:.4s;}
+  .icons span:nth-child(3){animation-delay:.8s;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+  .eyebrow{color:var(--ink-soft);font-weight:700;font-size:0.9rem;margin-bottom:6px;text-align:center;}
+  .section-title{font-size:clamp(1.1rem, 3.8vw, 1.45rem);margin-bottom:10px;text-align:center;}
+  .lead{color:var(--ink-soft);font-size:0.95rem;max-width:52ch;margin:0 auto 18px;text-align:center;}
+
+  /* ---------- DEFINITION / EXAMPLE ---------- */
+  .def-card{
+    background:var(--white);border:1px solid rgba(30,42,68,0.08);border-radius:18px;
+    padding:18px 20px;box-shadow:var(--shadow);text-align:center;margin-bottom:14px;
+  }
+  .def-card p{margin:0;font-size:0.98rem;}
+  .example-box{
+    background:var(--paper-2);border-radius:16px;padding:16px 18px;
+  }
+  .example-box .row{margin-bottom:10px;}
+  .example-box .row:last-child{margin-bottom:0;}
+  .example-box .label{font-weight:800;font-size:0.82rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.02em;margin-bottom:3px;}
+  .example-box .value{font-weight:700;font-size:0.98rem;}
+  .example-box .value.hyp{color:var(--teal);}
+
+  /* ---------- OPINION VS HYPOTHESIS ---------- */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:560px){.compare{grid-template-columns:1fr;}}
+  .compare-card{border-radius:16px;padding:16px 16px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .compare-card h4{font-family:'Baloo 2',sans-serif;font-size:0.98rem;margin:0 0 8px;}
+  .compare-card .statement{font-weight:700;font-size:0.92rem;margin-bottom:10px;}
+  .compare-card ul{margin:0;padding-left:0;list-style:none;}
+  .compare-card li{font-size:0.86rem;margin-bottom:4px;}
+  .compare-card.opinion{background:var(--coral-bg);}
+  .compare-card.opinion h4{color:var(--coral);}
+  .compare-card.hypothesis{background:var(--teal-bg);}
+  .compare-card.hypothesis h4{color:var(--teal);}
+
+  /* ---------- MINIRETO: CLASSIFY ---------- */
+  .classify-card{
+    background:var(--white);border-radius:16px;padding:16px 18px;margin-bottom:12px;
+    box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);
+  }
+  .classify-card .statement{font-weight:700;font-size:0.95rem;margin-bottom:10px;}
+  .classify-btns{display:flex;gap:8px;}
+  .classify-btns button{
+    flex:1;padding:9px 10px;border-radius:10px;border:2px solid #E3DCC9;background:var(--paper);
+    font-family:'Nunito Sans',sans-serif;font-weight:700;font-size:0.84rem;cursor:pointer;
+  }
+  .classify-card .feedback{margin-top:10px;font-size:0.86rem;font-weight:700;display:none;padding:8px 10px;border-radius:10px;}
+  .classify-card .feedback.show{display:block;}
+  .classify-card.correct .feedback{background:var(--teal-bg);color:var(--teal);}
+  .classify-card.incorrect .feedback{background:var(--coral-bg);color:var(--coral);}
+  .classify-btns button.picked-correct{background:var(--teal);color:var(--white);border-color:var(--teal);}
+  .classify-btns button.picked-incorrect{background:var(--coral);color:var(--white);border-color:var(--coral);}
+  .classify-btns button:disabled{cursor:default;}
+
+  /* ---------- VARIABLES + FLOW ---------- */
+  .watch-row{display:flex;gap:10px;margin:10px 0 18px;flex-wrap:wrap;justify-content:center;}
+  .watch-chip{flex:1 1 220px;border-radius:14px;padding:16px 18px;font-weight:700;font-size:0.94rem;display:flex;align-items:center;gap:10px;}
+  .watch-chip .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;}
+  .watch-chip.ind{background:var(--teal-bg);color:var(--teal);}
+  .watch-chip.ind .dot{background:var(--teal);}
+  .watch-chip.dep{background:var(--coral-bg);color:var(--coral);}
+  .watch-chip.dep .dot{background:var(--coral);}
+  .watch-chip small{display:block;font-weight:600;opacity:0.85;font-size:0.76rem;margin-top:2px;}
+  .flow{display:flex;flex-direction:column;gap:4px;align-items:center;}
+  .flow-step{background:var(--white);border:1px solid rgba(30,42,68,0.08);border-radius:14px;padding:12px 20px;font-weight:700;font-size:0.94rem;box-shadow:var(--shadow);width:100%;max-width:320px;text-align:center;}
+  .flow-step:nth-child(1){color:var(--teal);}
+  .flow-step:nth-child(3){color:var(--coral);}
+  .flow-arrow{color:var(--ink-soft);font-size:1.1rem;line-height:1;}
+  .flow-caption{margin-top:16px;text-align:center;color:var(--ink-soft);font-size:0.88rem;max-width:48ch;font-style:italic;}
+
+  /* ---------- FORMULA "SI...ENTONCES" ---------- */
+  .formula-box{
+    background:var(--ink);color:var(--paper);border-radius:16px;padding:18px 20px;text-align:center;
+    font-family:'Baloo 2',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:16px;line-height:1.6;
+  }
+  .formula-box .blank{border-bottom:2px dashed rgba(251,246,236,0.5);padding:0 8px;}
+  .examples-row{display:flex;flex-direction:column;gap:8px;}
+  .ex-chip{background:var(--paper-2);border-radius:12px;padding:10px 14px;font-size:0.9rem;font-weight:600;}
+
+  /* ---------- BUILD HYPOTHESIS ---------- */
+  .build-box{background:var(--white);border-radius:20px;padding:20px 20px 22px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .build-vars{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .build-vars .chip{border-radius:12px;padding:9px 13px;font-weight:700;font-size:0.85rem;flex:1 1 180px;}
+  .build-vars .chip.ind{background:var(--teal-bg);color:var(--teal);}
+  .build-vars .chip.dep{background:var(--coral-bg);color:var(--coral);}
+  .build-vars .chip small{display:block;font-weight:600;opacity:0.85;font-size:0.72rem;margin-top:2px;}
+  .build-field{margin-bottom:12px;}
+  .build-field label{display:block;font-weight:800;margin-bottom:5px;font-size:0.92rem;color:var(--ink);}
+  .build-field input{width:100%;padding:11px 13px;border-radius:10px;border:2px solid #E3DCC9;font-family:inherit;font-size:0.94rem;background:var(--paper);}
+  .build-field input:focus{outline:none;border-color:var(--gold);background:var(--white);}
+  .check-btn{
+    display:inline-block;background:var(--gold);color:var(--ink);border:none;border-radius:12px;
+    padding:12px 22px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.98rem;cursor:pointer;
+    box-shadow:0 5px 0 #C77E1F;transition:transform .08s;margin-top:6px;
+  }
+  .check-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #C77E1F;}
+  .build-summary{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--paper-2);font-weight:700;font-size:0.88rem;display:none;}
+  .build-summary.show{display:block;}
+
+  /* ---------- CHECKLIST ---------- */
+  .checklist{display:flex;flex-direction:column;gap:10px;}
+  .check-item{
+    display:flex;align-items:center;gap:12px;background:var(--white);border:2px solid #E3DCC9;
+    border-radius:14px;padding:13px 16px;cursor:pointer;font-weight:700;font-size:0.92rem;
+    box-shadow:var(--shadow);transition:background .2s, border-color .2s;
+  }
+  .check-item .box{
+    width:22px;height:22px;border-radius:7px;border:2px solid var(--ink-soft);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--white);
+  }
+  .check-item.checked{background:var(--teal-bg);border-color:var(--teal);}
+  .check-item.checked .box{background:var(--teal);border-color:var(--teal);}
+  .check-item.checked .box::after{content:'✓';}
+
+  /* ---------- CTA SLIDE ---------- */
+  .slide-cta .slide-inner{text-align:center;}
+  .cta-badge{font-size:2.4rem;margin-bottom:14px;}
+  .slide-cta h2{font-size:clamp(1.2rem,4.4vw,1.7rem);margin-bottom:10px;}
+  .slide-cta p{color:var(--ink-soft);font-size:1rem;max-width:46ch;margin:0 auto;}
+  .slide-cta .reminder{
+    margin-top:16px;background:var(--paper-2);border-radius:14px;padding:14px 18px;
+    font-style:italic;font-size:0.9rem;color:var(--ink);max-width:46ch;margin-left:auto;margin-right:auto;
+  }
+  .slide-cta .pill{display:inline-block;margin-top:20px;background:var(--teal);color:var(--white);font-family:'Baloo 2',sans-serif;font-weight:700;padding:12px 22px;border-radius:14px;}
+
+  /* ---------- NAV BAR ---------- */
+  .navbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;background:var(--white);border-top:1px solid rgba(30,42,68,0.08);}
+  .nav-btn{background:var(--ink);color:var(--paper);border:none;border-radius:12px;padding:10px 16px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .nav-btn:disabled{opacity:0.3;cursor:default;}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:150px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#DED4BC;cursor:pointer;border:none;padding:0;transition:background .2s, transform .2s;}
+  .dot.active{background:var(--gold);transform:scale(1.3);}
+  .slide-count{font-size:0.78rem;color:var(--ink-soft);font-weight:700;min-width:40px;text-align:center;}
+
+  ::selection{background:var(--gold);color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="deck" id="deck">
+
+    <div class="slide slide-hero active" data-slide>
+      <div class="slide-inner">
+        <div class="kicker">Progresión 1 · Matemáticas y física · Tema 1.5</div>
+        <h1>¿Cómo piensan los científicos antes de experimentar?</h1>
+        <p>Antes de medir cualquier cosa, un científico propone una explicación que se pueda poner a prueba: una hipótesis.</p>
+        <div class="icons"><span>🔬</span><span>💭</span><span>📐</span></div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 1</div>
+        <h2 class="section-title">¿Qué es una hipótesis?</h2>
+        <div class="def-card">
+          <p>Una hipótesis <strong>no</strong> es una respuesta definitiva ni una simple opinión. Es una idea fundamentada que intenta explicar un fenómeno y que puede ponerse a prueba mediante evidencia.</p>
+        </div>
+        <div class="example-box">
+          <div class="row">
+            <div class="label">Pregunta</div>
+            <div class="value">¿Qué ocurre con el alargamiento de un resorte cuando aumenta la masa suspendida?</div>
+          </div>
+          <div class="row">
+            <div class="label">Hipótesis</div>
+            <div class="value hyp">Si aumenta la masa suspendida, entonces aumentará el alargamiento del resorte.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 2</div>
+        <h2 class="section-title">Hipótesis vs. Opinión</h2>
+        <div class="compare">
+          <div class="compare-card opinion">
+            <h4>💬 Opinión</h4>
+            <div class="statement">"Creo que los resortes son interesantes."</div>
+            <ul>
+              <li>✅ Expresa una idea personal.</li>
+              <li>❌ No puede comprobarse experimentalmente.</li>
+            </ul>
+          </div>
+          <div class="compare-card hypothesis">
+            <h4>🔬 Hipótesis</h4>
+            <div class="statement">"Si aumenta la masa suspendida, entonces aumentará el alargamiento del resorte."</div>
+            <ul>
+              <li>✅ Relaciona variables.</li>
+              <li>✅ Puede comprobarse con mediciones.</li>
+              <li>✅ Permite obtener evidencia.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🎯 Minireto</div>
+        <h2 class="section-title">Selecciona cuáles son hipótesis</h2>
+        <p class="lead">Toca "Es hipótesis" o "No es hipótesis" para cada enunciado.</p>
+
+        <div class="classify-card" data-classify data-correct="no">
+          <div class="statement">Enunciado 1 · "Los resortes son útiles."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es hipótesis</button>
+            <button data-choice="no">No es hipótesis</button>
+          </div>
+          <div class="feedback">❌ No es hipótesis: es una opinión, no relaciona variables ni puede comprobarse.</div>
+        </div>
+
+        <div class="classify-card" data-classify data-correct="si">
+          <div class="statement">Enunciado 2 · "Si aumenta la masa suspendida, entonces el resorte se alargará más."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es hipótesis</button>
+            <button data-choice="no">No es hipótesis</button>
+          </div>
+          <div class="feedback">✅ Sí es hipótesis: relaciona dos variables y puede comprobarse con una medición.</div>
+        </div>
+
+        <div class="classify-card" data-classify data-correct="no">
+          <div class="statement">Enunciado 3 · "Creo que el experimento funcionará."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es hipótesis</button>
+            <button data-choice="no">No es hipótesis</button>
+          </div>
+          <div class="feedback">❌ No es hipótesis: expresa una expectativa personal, no relaciona variables medibles.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 3</div>
+        <h2 class="section-title">¿Cómo usar las variables?</h2>
+        <div class="watch-row">
+          <div class="watch-chip ind">Masa suspendida<small>Variable independiente — es la que modificas</small></div>
+          <div class="watch-chip dep">Alargamiento del resorte<small>Variable dependiente — es la que observas o mides</small></div>
+        </div>
+        <div class="flow">
+          <div class="flow-step">Aumenta la masa</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-step">Aumenta el alargamiento</div>
+        </div>
+        <p class="flow-caption">Esa posible relación es precisamente lo que intenta describir una hipótesis.</p>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 4</div>
+        <h2 class="section-title">La estructura "Si..., entonces..."</h2>
+        <div class="formula-box">Si <span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>,<br>entonces <span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>.</div>
+        <div class="examples-row">
+          <div class="ex-chip">Ejemplo 1 · Si aumenta la masa suspendida, entonces aumentará el alargamiento del resorte.</div>
+          <div class="ex-chip">Ejemplo 2 · Si disminuye la masa suspendida, entonces disminuirá el alargamiento del resorte.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🧪 Construye tu hipótesis</div>
+        <h2 class="section-title">Completa con tus propias palabras</h2>
+        <div class="build-box">
+          <div class="build-vars">
+            <div class="chip ind">Masa suspendida<small>Variable independiente</small></div>
+            <div class="chip dep">Alargamiento del resorte<small>Variable dependiente</small></div>
+          </div>
+          <div class="build-field">
+            <label for="ifInput">Si...</label>
+            <input type="text" id="ifInput" placeholder="Ej. aumenta la masa suspendida">
+          </div>
+          <div class="build-field">
+            <label for="thenInput">entonces...</label>
+            <input type="text" id="thenInput" placeholder="Ej. aumentará el alargamiento del resorte">
+          </div>
+          <button class="check-btn" id="buildBtn">Comprobar mi hipótesis</button>
+          <div class="build-summary" id="buildSummary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Autoevaluación rápida</div>
+        <h2 class="section-title">Antes de continuar, verifica</h2>
+        <p class="lead">Toca cada punto que ya cumpliste.</p>
+        <div class="checklist">
+          <div class="check-item" data-check><span class="box"></span> ¿Identifiqué la variable independiente?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Identifiqué la variable dependiente?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Mi hipótesis relaciona ambas variables?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Puede comprobarse mediante una medición?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Utilicé la estructura "Si..., entonces..."?</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide slide-cta" data-slide>
+      <div class="slide-inner">
+        <div class="cta-badge">🚀</div>
+        <h2>¡Listo para investigar!</h2>
+        <p>Ya puedes pasar al <strong>Nivel 2</strong> y redactar hipótesis científicas utilizando variables observables y medibles.</p>
+        <div class="reminder">Recuerda: una buena hipótesis no adivina resultados; propone una explicación o predicción que puede ponerse a prueba con evidencia.</div>
+        <div class="pill">Continúa al Nivel 2 →</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="navbar">
+    <button class="nav-btn" id="prevBtn">← Atrás</button>
+    <div class="dots" id="dots"></div>
+    <span class="slide-count" id="slideCount">1 / 9</span>
+    <button class="nav-btn" id="nextBtn">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+  // ---- Slide deck engine ----
+  var slides = Array.prototype.slice.call(document.querySelectorAll('[data-slide]'));
+  var dotsWrap = document.getElementById('dots');
+  var current = 0;
+
+  slides.forEach(function(_, i){
+    var d = document.createElement('button');
+    d.className = 'dot' + (i===0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Ir a la diapositiva ' + (i+1));
+    d.addEventListener('click', function(){ goTo(i); });
+    dotsWrap.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var slideCount = document.getElementById('slideCount');
+
+  function render(){
+    slides.forEach(function(s, i){
+      s.classList.remove('active','leaving-left');
+      if(i === current){ s.classList.add('active'); }
+      else if(i < current){ s.classList.add('leaving-left'); }
+    });
+    dots.forEach(function(d, i){ d.classList.toggle('active', i===current); });
+    prevBtn.disabled = current === 0;
+    nextBtn.textContent = current === slides.length-1 ? 'Reiniciar ↺' : 'Siguiente →';
+    slideCount.textContent = (current+1) + ' / ' + slides.length;
+  }
+
+  function goTo(i){
+    current = Math.max(0, Math.min(slides.length-1, i));
+    render();
+  }
+
+  prevBtn.addEventListener('click', function(){ goTo(current-1); });
+  nextBtn.addEventListener('click', function(){
+    if(current === slides.length-1){ goTo(0); } else { goTo(current+1); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight'){ goTo(current+1); }
+    if(e.key === 'ArrowLeft'){ goTo(current-1); }
+  });
+
+  var touchStartX = null;
+  var deck = document.getElementById('deck');
+  deck.addEventListener('touchstart', function(e){ touchStartX = e.changedTouches[0].clientX; }, {passive:true});
+  deck.addEventListener('touchend', function(e){
+    if(touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 50){ dx < 0 ? goTo(current+1) : goTo(current-1); }
+    touchStartX = null;
+  }, {passive:true});
+
+  render();
+
+  // ---- Minireto: classify statements, immediate feedback ----
+  document.querySelectorAll('[data-classify]').forEach(function(card){
+    var correct = card.getAttribute('data-correct');
+    var buttons = card.querySelectorAll('.classify-btns button');
+    var feedback = card.querySelector('.feedback');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var choice = btn.getAttribute('data-choice');
+        buttons.forEach(function(b){ b.disabled = true; });
+        if(choice === correct){
+          btn.classList.add('picked-correct');
+          card.classList.add('correct');
+        } else {
+          btn.classList.add('picked-incorrect');
+          card.classList.add('incorrect');
+        }
+        feedback.classList.add('show');
+      });
+    });
+  });
+
+  // ---- Build hypothesis: immediate, informational feedback (nothing is saved) ----
+  document.getElementById('buildBtn').addEventListener('click', function(){
+    function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+    var ifVal = norm(document.getElementById('ifInput').value);
+    var thenVal = norm(document.getElementById('thenInput').value);
+    var summary = document.getElementById('buildSummary');
+    summary.classList.add('show');
+
+    if(ifVal.length === 0 || thenVal.length === 0){
+      summary.textContent = '✏️ Completa las dos partes de tu hipótesis antes de comprobarla.';
+      return;
+    }
+    var mentionsMasa = ifVal.indexOf('masa') !== -1;
+    var mentionsAlargamiento = thenVal.indexOf('alarg') !== -1 || thenVal.indexOf('estira') !== -1 || thenVal.indexOf('resorte') !== -1;
+
+    if(mentionsMasa && mentionsAlargamiento){
+      summary.textContent = '✅ ¡Muy bien! Tu hipótesis relaciona la masa suspendida con el alargamiento del resorte y sigue la estructura "Si..., entonces...". Eso es justo lo que hace una hipótesis científica.';
+    } else {
+      summary.textContent = '🔎 Revisa tu hipótesis: recuerda mencionar la masa suspendida en la parte "Si..." y el alargamiento del resorte en la parte "entonces...", para que relacione claramente las dos variables.';
+    }
+  });
+
+  // ---- Self-check checklist: pure reflection toggle ----
+  document.querySelectorAll('[data-check]').forEach(function(item){
+    item.addEventListener('click', function(){ item.classList.toggle('checked'); });
+  });
+</script>
+
+</body>
+</html>
