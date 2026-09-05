@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Las matemáticas en la física</title>
+<style>
+  :root{
+    --bg:#12141c;
+    --bg-elevated:#1b1f2c;
+    --text:#EDEAE3;
+    --text-muted:#9aa0ae;
+    --physics:#F2A65A;
+    --math:#6EC6CA;
+    --violet:#B98BD9;
+    --line:rgba(237,234,227,0.12);
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    height:100%;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    overflow:hidden;
+  }
+  #stars{
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.35), transparent),
+      radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.25), transparent),
+      radial-gradient(1.5px 1.5px at 60% 70%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 30% 85%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1.5px 1.5px at 90% 60%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1px 1px at 45% 40%, rgba(255,255,255,0.2), transparent),
+      radial-gradient(1px 1px at 20% 55%, rgba(255,255,255,0.25), transparent),
+      radial-gradient(1.5px 1.5px at 70% 30%, rgba(255,255,255,0.25), transparent);
+    background-repeat:no-repeat;
+    pointer-events:none;
+    z-index:0;
+  }
+  .app{
+    position:relative; z-index:1;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+  }
+  .topbar{
+    display:flex; align-items:center; gap:14px;
+    padding:16px 28px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .brand{
+    font-family:var(--serif);
+    font-size:15px;
+    color:var(--text-muted);
+    letter-spacing:0.02em;
+  }
+  .progress-track{
+    flex:1;
+    height:3px;
+    background:var(--line);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:12.5%;
+    background:linear-gradient(90deg, var(--math), var(--physics));
+    transition:width .45s ease;
+  }
+  .slide-counter{
+    font-size:13px;
+    color:var(--text-muted);
+    font-variant-numeric:tabular-nums;
+    min-width:44px;
+    text-align:right;
+  }
+  .stage{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+  }
+  .slide{
+    position:absolute; inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:40px 8vw;
+    opacity:0;
+    transform:translateX(40px);
+    transition:opacity .5s ease, transform .5s ease;
+    pointer-events:none;
+    overflow-y:auto;
+  }
+  .slide.active{
+    opacity:1;
+    transform:translateX(0);
+    pointer-events:auto;
+  }
+  .slide.leaving{
+    transform:translateX(-40px);
+  }
+  .slide.top-aligned{
+    justify-content:flex-start;
+    padding-top:56px;
+    padding-bottom:56px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--math);
+    margin-bottom:14px;
+    text-align:center;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(30px, 4.4vw, 54px);
+    line-height:1.15;
+    text-align:center;
+    max-width:900px;
+  }
+  h2{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(24px, 3.4vw, 38px);
+    line-height:1.2;
+    text-align:center;
+    max-width:820px;
+    margin-bottom:22px;
+  }
+  p.lead{
+    font-size:clamp(16px, 1.6vw, 19px);
+    color:var(--text-muted);
+    text-align:center;
+    max-width:640px;
+    line-height:1.6;
+    margin-top:16px;
+  }
+  .hint{
+    position:absolute;
+    bottom:26px;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:12px;
+    color:var(--text-muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  /* ---- Portada ---- */
+  #slide-0 .orbit-wrap{
+    width:min(420px, 60vw);
+    aspect-ratio:1;
+    position:relative;
+    margin-bottom:8px;
+  }
+  #slide-0 svg{ width:100%; height:100%; }
+  .orbit-path{
+    fill:none;
+    stroke:var(--math);
+    stroke-width:1.4;
+    stroke-dasharray:4 6;
+    opacity:0.55;
+  }
+  .parab-path{
+    fill:none;
+    stroke:var(--physics);
+    stroke-width:2.2;
+    stroke-linecap:round;
+    stroke-dasharray:340;
+    stroke-dashoffset:340;
+    animation:draw 3.2s ease-out infinite;
+  }
+  @keyframes draw{
+    0%{stroke-dashoffset:340;}
+    45%{stroke-dashoffset:0;}
+    80%{stroke-dashoffset:0;}
+    100%{stroke-dashoffset:-340;}
+  }
+  .planet{
+    fill:var(--physics);
+  }
+  .sun{
+    fill:var(--violet);
+  }
+
+  /* ---- Tarjetas flip ---- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(220px,300px));
+    gap:20px;
+    margin-top:6px;
+  }
+  @media (max-width:640px){
+    .grid{ grid-template-columns:1fr; }
+  }
+  .card{
+    width:100%;
+    aspect-ratio:4/3;
+    perspective:1200px;
+    cursor:pointer;
+  }
+  .card-inner{
+    position:relative;
+    width:100%; height:100%;
+    transition:transform .6s cubic-bezier(.4,.2,.2,1);
+    transform-style:preserve-3d;
+  }
+  .card.flipped .card-inner{ transform:rotateY(180deg); }
+  .card-face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:14px;
+    border:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:18px;
+  }
+  .card-front{
+    background:var(--bg-elevated);
+  }
+  .card-front .tag{
+    font-size:11px;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .card-front .name{
+    font-family:var(--serif);
+    font-size:20px;
+  }
+  .card-front .tap{
+    margin-top:14px;
+    font-size:11px;
+    color:var(--math);
+  }
+  .card-back{
+    background:var(--bg-elevated);
+    transform:rotateY(180deg);
+    border-color:var(--math);
+  }
+  .card-back p{
+    font-size:13.5px;
+    line-height:1.5;
+    color:var(--text);
+  }
+  .card-back .years{
+    font-size:11px;
+    color:var(--physics);
+    margin-top:10px;
+  }
+
+  /* ---- Lista de límites ---- */
+  .limits{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-width:640px;
+    width:100%;
+    margin-top:10px;
+  }
+  .limit-item{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    padding:14px 18px;
+    background:var(--bg-elevated);
+    border-radius:12px;
+    border:1px solid var(--line);
+  }
+  .limit-item .dot{
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--physics);
+    margin-top:7px;
+    flex-shrink:0;
+  }
+  .limit-item p{ font-size:14.5px; line-height:1.55; color:var(--text-muted); }
+  .limit-item strong{ color:var(--text); }
+
+  /* ---- Tabs de ideas ---- */
+  .tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-bottom:22px;
+  }
+  .tab-btn{
+    font-family:var(--sans);
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:all .25s ease;
+  }
+  .tab-btn.active{
+    background:var(--math);
+    color:#0d1017;
+    border-color:var(--math);
+  }
+  .tab-panel{
+    display:none;
+    max-width:640px;
+    text-align:center;
+    animation:fadeIn .4s ease;
+  }
+  .tab-panel.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+  .tab-panel p{ font-size:15.5px; line-height:1.6; color:var(--text-muted); }
+  .tab-panel .who{ font-family:var(--serif); font-size:17px; color:var(--text); margin-bottom:10px; }
+
+  /* ---- Pregunta final ---- */
+  .final-q{
+    background:var(--bg-elevated);
+    border:1px solid var(--violet);
+    border-radius:16px;
+    padding:28px 32px;
+    max-width:640px;
+    text-align:center;
+    margin-top:20px;
+  }
+  .final-q p{ font-size:15px; color:var(--text-muted); line-height:1.6; }
+
+  /* ---- Navegación ---- */
+  /* ---- Botones de "saber más" dentro de límites ---- */
+  .limit-item{ flex-direction:column; align-items:stretch; }
+  .limit-item .limit-row{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .limit-actions{
+    margin-top:12px;
+    padding-left:22px;
+  }
+  .formula-btn{
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:14px;
+    color:var(--text);
+    background:rgba(242,166,90,0.08);
+    border:1px solid rgba(242,166,90,0.45);
+    border-radius:8px;
+    padding:6px 14px;
+    cursor:pointer;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .formula-btn:hover{ background:rgba(242,166,90,0.16); }
+  .info-btn{
+    font-family:var(--sans);
+    font-size:12px;
+    color:var(--text);
+    background:rgba(110,198,202,0.08);
+    border:1px solid rgba(110,198,202,0.45);
+    border-radius:8px;
+    padding:6px 14px;
+    cursor:pointer;
+    transition:background .2s ease, border-color .2s ease;
+  }
+  .info-btn:hover{ background:rgba(110,198,202,0.16); }
+  .btn-caption{
+    display:block;
+    font-size:10px;
+    color:var(--text-muted);
+    margin-top:5px;
+  }
+  .limit-extra{
+    font-size:13.5px;
+    line-height:1.55;
+    color:var(--text-muted);
+    margin-top:10px;
+    padding-left:22px;
+  }
+
+  /* ---- Modal "libro" ---- */
+  .book-overlay{
+    position:fixed; inset:0;
+    background:rgba(8,9,13,0.72);
+    backdrop-filter:blur(3px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s ease;
+    padding:24px;
+  }
+  .book-overlay.open{ opacity:1; pointer-events:auto; }
+  .book-card{
+    width:min(620px, 100%);
+    max-height:min(560px, 84vh);
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:18px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 30px 80px rgba(0,0,0,0.5);
+    transform:translateY(16px) scale(0.97);
+    transition:transform .3s ease;
+  }
+  .book-overlay.open .book-card{ transform:translateY(0) scale(1); }
+  .book-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 24px;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .book-title{
+    font-family:var(--serif);
+    font-size:18px;
+  }
+  .book-close{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    font-size:20px;
+    cursor:pointer;
+    line-height:1;
+    padding:4px 8px;
+  }
+  .book-close:hover{ color:var(--text); }
+  .book-stage{
+    flex:1;
+    overflow-y:auto;
+    perspective:1400px;
+    padding:26px 30px;
+    display:flex;
+  }
+  .book-page{
+    margin:auto;
+    max-width:480px;
+    transform-origin:left center;
+    transition:transform .4s ease, opacity .4s ease;
+  }
+  .book-page p{
+    font-size:15px;
+    line-height:1.65;
+    color:var(--text-muted);
+    margin-bottom:14px;
+  }
+  .book-page p:last-child{ margin-bottom:0; }
+  .book-page strong{ color:var(--text); }
+  .formula-display{
+    font-family:var(--serif);
+    font-style:italic;
+    font-size:19px;
+    color:var(--physics);
+    text-align:center;
+    margin:16px 0 !important;
+  }
+  .book-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 24px;
+    border-top:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .book-nav-btn{
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .book-nav-btn:disabled{ opacity:0.25; cursor:default; }
+  .book-page-count{
+    font-size:12px;
+    color:var(--text-muted);
+    font-variant-numeric:tabular-nums;
+  }
+
+  .navbar{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 28px;
+    border-top:1px solid var(--line);
+  }
+
+  /* ---- Ajustes para pantallas angostas (celular) ---- */
+  @media (max-width:560px){
+    .topbar{ padding:12px 16px; gap:10px; }
+    .brand{ display:none; }
+    .slide-counter{ min-width:auto; }
+    .navbar{ padding:12px 16px; }
+    .nav-btn{ padding:9px 12px; font-size:13px; }
+    .stage .slide{ padding:28px 6vw; }
+    .book-stage{ padding:20px; }
+    .book-header{ padding:14px 18px; }
+    .book-footer{ padding:12px 18px; }
+    .book-nav-btn{ padding:7px 10px; font-size:12px; }
+  }
+  .nav-btn{
+    font-family:var(--sans);
+    font-size:14px;
+    color:var(--text);
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 18px;
+    cursor:pointer;
+    transition:background .2s ease, opacity .2s ease;
+  }
+  .nav-btn:hover{ background:#262b3b; }
+  .nav-btn:disabled{ opacity:0.3; cursor:default; }
+  .dots{
+    display:flex;
+    gap:8px;
+  }
+  .dot-btn{
+    width:8px; height:8px;
+    border-radius:50%;
+    background:var(--line);
+    border:none;
+    cursor:pointer;
+    padding:0;
+    transition:background .25s ease, transform .25s ease;
+  }
+  .dot-btn.active{
+    background:var(--physics);
+    transform:scale(1.3);
+  }
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div class="app">
+
+  <div class="topbar">
+    <span class="brand">Las matemáticas en la física</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="slide-counter" id="slideCounter">1 / 8</span>
+  </div>
+
+  <div class="stage" id="stage">
+
+    <!-- 0: Portada -->
+    <section class="slide active" id="slide-0">
+      <div class="orbit-wrap">
+        <svg viewBox="0 0 400 400">
+          <ellipse class="orbit-path" cx="200" cy="210" rx="150" ry="90"/>
+          <circle class="sun" cx="130" cy="210" r="14"/>
+          <path class="parab-path" d="M 40 340 Q 200 40 360 340"/>
+          <circle class="planet" cx="330" cy="150" r="7"/>
+        </svg>
+      </div>
+      <h1>¿Casualidad… o algo más?</h1>
+      <p class="lead">Una fórmula inventada por pura curiosidad matemática termina describiendo, siglos después, cómo se mueve un planeta. Esto le pasó tantas veces a la física que tiene nombre propio. Descúbrelo.</p>
+      <div class="hint">→ Usa las flechas o desliza para avanzar</div>
+    </section>
+
+    <!-- 1: El problema -->
+    <section class="slide" id="slide-1">
+      <span class="eyebrow">EL ENIGMA</span>
+      <h2>La "eficacia irrazonable" de las matemáticas</h2>
+      <p class="lead">En 1960, el físico <strong style="color:var(--text)">Eugene Wigner</strong> le puso nombre a algo que llevaba siglos inquietando a científicos: las matemáticas se inventan siguiendo belleza y lógica interna, sin pensar en si servirán para algo. Y sin embargo, casi siempre terminan siendo justo la herramienta que la naturaleza necesitaba.</p>
+      <p class="lead" style="margin-top:22px;">La física estudia el mundo físico: lo que se puede medir y observar. Las matemáticas estudian ideas abstractas que no tocan ni pesan nada. Son mundos distintos… entonces, ¿por qué encajan tan bien?</p>
+    </section>
+
+    <!-- 2: Ejemplos (tarjetas flip) -->
+    <section class="slide" id="slide-2">
+      <span class="eyebrow">CASOS REALES</span>
+      <h2>Cuatro historias asombrosas</h2>
+      <p class="lead" style="margin-bottom:18px;">Toca cada tarjeta para revelar la conexión.</p>
+      <div class="grid">
+
+        <div class="card" data-card>
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div class="tag">GEOMETRÍA</div>
+              <div class="name">Las cónicas de Apolonio</div>
+              <div class="tap">Toca para revelar ↻</div>
+            </div>
+            <div class="card-face card-back">
+              <p>Apolonio estudió las curvas que salen de cortar un cono (círculos, elipses, parábolas) por pura curiosidad geométrica, casi 200 años antes de Cristo.</p>
+              <div class="years">1800 años después, Kepler usó esas mismas curvas para descubrir que los planetas giran en elipses.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-card>
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div class="tag">ÁLGEBRA</div>
+              <div class="name">Los números "imaginarios"</div>
+              <div class="tap">Toca para revelar ↻</div>
+            </div>
+            <div class="card-face card-back">
+              <p>En el siglo XVI, matemáticos inventaron números con raíz de negativos solo para resolver ecuaciones cúbicas. Los llamaban "sin sentido".</p>
+              <div class="years">Siglos después son esenciales en electromagnetismo y mecánica cuántica.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-card>
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div class="tag">CUÁNTICA</div>
+              <div class="name">Matrices y el átomo</div>
+              <div class="tap">Toca para revelar ↻</div>
+            </div>
+            <div class="card-face card-back">
+              <p>Heisenberg intentaba describir el comportamiento del electrón. Sin saberlo, terminó usando reglas de matrices que ya existían.</p>
+              <div class="years">Las matrices llevaban décadas estudiándose sin ninguna intención de aplicarse a la física.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" data-card>
+          <div class="card-inner">
+            <div class="card-face card-front">
+              <div class="tag">RELATIVIDAD</div>
+              <div class="name">Geometrías "imposibles"</div>
+              <div class="tap">Toca para revelar ↻</div>
+            </div>
+            <div class="card-face card-back">
+              <p>Matemáticos del siglo XIX exploraron qué pasaría si cambiabas un postulado de Euclides, solo por curiosidad teórica.</p>
+              <div class="years">Einstein encontró ahí exactamente lo que necesitaba para describir un espacio-tiempo curvo.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3: Límites -->
+    <section class="slide top-aligned" id="slide-3">
+      <span class="eyebrow">EL OTRO LADO</span>
+      <h2>Pero no todo es magia</h2>
+      <div class="limits">
+        <div class="limit-item">
+          <div class="limit-row">
+            <div class="dot"></div>
+            <p><strong>El problema de los tres cuerpos.</strong> Con dos objetos (Tierra-Luna), la fórmula de Newton funciona perfecto. Con tres (Sol-Tierra-Luna), no existe una fórmula exacta. Por eso un mes lunar nunca dura exactamente lo mismo.</p>
+          </div>
+          <p class="limit-extra">Se refiere a la Ley de Gravitación Universal, F = Gm₁m₂/r². Con dos cuerpos esa fórmula tiene solución exacta y da una órbita perfecta. Con tres, cada fuerza sigue siendo exacta, pero el sistema completo ya no tiene solución cerrada — solo se puede aproximar numéricamente, paso a paso.</p>
+          <div class="limit-actions">
+            <button class="formula-btn" data-book="threebody">F = G · m₁m₂ / r²</button>
+            <span class="btn-caption">Toca la fórmula para profundizar (incluye teoría del caos)</span>
+          </div>
+        </div>
+        <div class="limit-item">
+          <div class="limit-row">
+            <div class="dot"></div>
+            <p><strong>La mecánica cuántica solo da probabilidades.</strong> Nunca certezas absolutas sobre qué hará una partícula.</p>
+          </div>
+          <p class="limit-extra">Aquí no es que falten datos por medir: el principio de incertidumbre de Heisenberg dice que ciertos pares de valores, como posición y velocidad, no pueden conocerse ambos con precisión absoluta al mismo tiempo. La aleatoriedad es real, no por falta de instrumentos.</p>
+          <div class="limit-actions">
+            <button class="info-btn" data-book="quantum">Saber más</button>
+          </div>
+        </div>
+        <div class="limit-item">
+          <div class="limit-row">
+            <div class="dot"></div>
+            <p><strong>Fuera de la física, la cosa empeora.</strong> En biología, economía o psicología, las matemáticas son mucho menos efectivas para predecir.</p>
+          </div>
+          <p class="limit-extra">Estos sistemas dependen de miles de variables interconectadas y tienen retroalimentación —el resultado de hoy cambia las reglas de mañana—, además del factor humano: la gente no obedece leyes fijas como la gravedad.</p>
+          <div class="limit-actions">
+            <button class="info-btn" data-book="outside">Saber más</button>
+          </div>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:20px;">Esto es clave: las matemáticas son una herramienta poderosísima, no una varita mágica.</p>
+    </section>
+
+    <!-- 4: Ideas / explicaciones -->
+    <section class="slide" id="slide-4">
+      <span class="eyebrow">POSIBLES RESPUESTAS</span>
+      <h2>¿Por qué pasa esto?</h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="0">Galileo</button>
+        <button class="tab-btn" data-tab="1">Kant</button>
+        <button class="tab-btn" data-tab="2">Origen físico</button>
+        <button class="tab-btn" data-tab="3">Simetría</button>
+      </div>
+      <div class="tab-panel active" data-panel="0">
+        <div class="who">El universo está escrito en números</div>
+        <p>Para Galileo, la naturaleza misma es, en el fondo, matemática. Por eso no debería sorprendernos que al estudiarla aparezcan triángulos, círculos y ecuaciones por todos lados.</p>
+      </div>
+      <div class="tab-panel" data-panel="1">
+        <div class="who">Un mismo cerebro para ambas cosas</div>
+        <p>El filósofo Kant proponía que entendemos tanto las matemáticas como el mundo físico usando las mismas estructuras mentales de espacio y tiempo. Encajan porque nacen de la misma mente.</p>
+      </div>
+      <div class="tab-panel" data-panel="2">
+        <div class="who">Aprendimos mirando la naturaleza</div>
+        <p>Aprendiste a sumar viendo cómo se juntan objetos. Aprendiste cálculo pensando en cosas que aceleran. Las matemáticas nacieron de observar el mundo físico, así que tiene sentido que le "queden bien".</p>
+      </div>
+      <div class="tab-panel" data-panel="3">
+        <div class="who">Todo se trata de simetría</div>
+        <p>Tanto una ley física como un enunciado matemático "funcionan" cuando se cumplen ciertas simetrías. Por eso comparten una misma lógica de fondo, casi como si hablaran el mismo idioma.</p>
+      </div>
+    </section>
+
+    <!-- 5: Reflexión -->
+    <section class="slide" id="slide-5">
+      <span class="eyebrow">PARA PENSAR</span>
+      <h2>¿Las inventamos o las descubrimos?</h2>
+      <div class="final-q">
+        <p>Si inventamos las matemáticas, ¿por qué describen tan bien algo que no diseñamos nosotros —el universo—?</p>
+        <p style="margin-top:14px;">Y si las descubrimos, como quien descubre una montaña, ¿dónde "existían" antes de que alguien las escribiera por primera vez?</p>
+      </div>
+      <p class="lead" style="margin-top:22px;">No hay una respuesta única todavía. Es uno de los grandes debates abiertos de la filosofía de la ciencia.</p>
+    </section>
+
+    <!-- 6: Cierre -->
+    <section class="slide" id="slide-6">
+      <h2 style="max-width:700px;">La próxima vez que resuelvas una ecuación…</h2>
+      <p class="lead">…recuerda que quizás no solo estás resolviendo un ejercicio. Estás usando el mismo tipo de herramienta que ayudó a predecir órbitas planetarias, a describir el átomo y a torcer el espacio-tiempo.</p>
+      <p class="lead" style="margin-top:18px; color:var(--math);">Las matemáticas son el lenguaje con el que, casi siempre, la naturaleza decide hablar.</p>
+    </section>
+
+  </div>
+
+  <div class="navbar">
+    <button class="nav-btn" id="prevBtn">← Anterior</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav-btn" id="nextBtn">Siguiente →</button>
+  </div>
+
+</div>
+
+<div class="book-overlay" id="bookOverlay">
+  <div class="book-card">
+    <div class="book-header">
+      <span class="book-title" id="bookTitle">Título</span>
+      <button class="book-close" id="bookClose" aria-label="Cerrar">×</button>
+    </div>
+    <div class="book-stage">
+      <div class="book-page" id="bookPage"></div>
+    </div>
+    <div class="book-footer">
+      <button class="book-nav-btn" id="bookPrev">← Anterior</button>
+      <span class="book-page-count" id="bookCount">1 / 1</span>
+      <button class="book-nav-btn" id="bookNext">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let current = 0;
+
+  const dotsWrap = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot-btn' + (i === 0 ? ' active' : '');
+    b.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(b);
+  });
+  const dotEls = Array.from(dotsWrap.children);
+
+  const progressFill = document.getElementById('progressFill');
+  const slideCounter = document.getElementById('slideCounter');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function render(){
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === current);
+      if(i === current) s.scrollTop = 0;
+    });
+    dotEls.forEach((d, i) => d.classList.toggle('active', i === current));
+    progressFill.style.width = ((current + 1) / total * 100) + '%';
+    slideCounter.textContent = (current + 1) + ' / ' + total;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+    nextBtn.textContent = current === total - 1 ? 'Fin' : 'Siguiente →';
+  }
+
+  function goTo(i){
+    if(i < 0 || i > total - 1) return;
+    current = i;
+    render();
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => { if(current < total - 1) goTo(current + 1); });
+
+  document.addEventListener('keydown', (e) => {
+    if(document.getElementById('bookOverlay').classList.contains('open')) return;
+    if(e.key === 'ArrowRight') goTo(current + 1);
+    if(e.key === 'ArrowLeft') goTo(current - 1);
+  });
+
+  // swipe support
+  let touchStartX = null;
+  const stage = document.getElementById('stage');
+  stage.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+  stage.addEventListener('touchend', (e) => {
+    if(touchStartX === null) return;
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if(dx < -40) goTo(current + 1);
+    if(dx > 40) goTo(current - 1);
+    touchStartX = null;
+  });
+
+  // flip cards
+  document.querySelectorAll('[data-card]').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('flipped'));
+  });
+
+  // tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelector('.tab-panel[data-panel="' + idx + '"]').classList.add('active');
+    });
+  });
+
+  render();
+
+  // ---- Modal "libro" ----
+  const bookData = {
+    threebody: {
+      title: 'El problema de los tres cuerpos',
+      pages: [
+        `<p>Todo empieza con la <strong>Ley de Gravitación Universal de Newton</strong>:</p>
+         <p class="formula-display">F = G · (m₁ m₂) / r²</p>
+         <p>Cuando solo hay <strong>dos cuerpos</strong> —por ejemplo, Tierra y Luna, ignorando al Sol— esta ley se combina con F = ma y se resuelve por completo con matemáticas exactas. El resultado es hermoso: la órbita siempre es una elipse perfecta, con posición y velocidad calculables para cualquier instante. A esto se le llama el <strong>problema de los dos cuerpos</strong>, y sí tiene solución exacta.</p>`,
+        `<p>El problema aparece cuando agregas un <strong>tercer cuerpo</strong> que también jala gravitacionalmente: en este caso, el Sol, que atrae tanto a la Tierra como a la Luna.</p>
+         <p>Ahora hay tres fuerzas actuando a la vez —Tierra-Luna, Tierra-Sol, Luna-Sol—. La ecuación de Newton sigue aplicando perfectamente a cada par, pero <strong>no existe una fórmula general que resuelva el sistema completo de una sola vez</strong>. Solo se puede aproximar numéricamente, paso a paso, con computadora.</p>
+         <p>Por eso la órbita de la Luna no es una elipse perfectamente estable: el Sol la perturba constantemente. Así, un mes lunar varía entre aproximadamente 29.18 y 29.93 días.</p>`,
+        `<p>Cuando el matemático <strong>Henri Poincaré</strong> intentó resolver este problema en la década de 1890, descubrió algo que nadie esperaba: aunque las ecuaciones son completamente <strong>deterministas</strong> —nada de azar—, el sistema puede volverse extremadamente sensible a las condiciones iniciales.</p>
+         <p>Cambia la posición inicial de un cuerpo por una fracción de milímetro y, después de suficiente tiempo, las trayectorias resultantes pueden ser completamente distintas. No es que la fórmula falle: pequeñísimos errores se amplifican exponencialmente.</p>`,
+        `<p>Esto es exactamente la definición de un <strong>sistema caótico</strong>: determinista, pero impredecible a largo plazo. El trabajo de Poincaré sobre los tres cuerpos se considera el primer descubrimiento matemático del caos, décadas antes de que Edward Lorenz popularizara la idea en 1960 con el famoso <strong>efecto mariposa</strong> —¿puede el aleteo de una mariposa en Brasil provocar un tornado en Texas?—, que Lorenz descubrió estudiando modelos matemáticos del clima.</p>
+         <p>El caos no significa "aleatorio" o "sin reglas": significa reglas exactas cuyo resultado se vuelve imposible de predecir con precisión perfecta cuando el sistema tiene suficientes partes interactuando entre sí.</p>`
+      ]
+    },
+    quantum: {
+      title: '¿Por qué la cuántica solo da probabilidades?',
+      pages: [
+        `<p>En la física de Newton, si conoces la posición y velocidad exactas de un objeto en este momento, puedes calcular con certeza dónde estará dentro de un año. Todo es <strong>determinista</strong>: mismas condiciones, mismo resultado, siempre.</p>
+         <p>En el mundo cuántico —el de los electrones, fotones y partículas subatómicas— esto deja de ser cierto, y no por falta de mejores instrumentos.</p>`,
+        `<p>El físico <strong>Werner Heisenberg</strong> demostró algo radical: existe un límite fundamental a cuánta información puedes conocer a la vez sobre una partícula. Su <strong>principio de incertidumbre</strong> dice que mientras más precisión tengas sobre la posición de un electrón, menos podrás saber sobre su velocidad, y viceversa.</p>
+         <p>No es que falten datos por medir: en cierto sentido, la partícula misma no tiene ambos valores definidos al mismo tiempo.</p>`,
+        `<p>En lugar de una posición exacta, la mecánica cuántica describe a cada partícula con una <strong>función de onda</strong>: una especie de mapa de probabilidades que dice qué tan probable es encontrarla en cada lugar posible. Antes de medir, el electrón no está "en algún lugar que no conocemos" — está, en cierto sentido, en varios lugares posibles a la vez.</p>`,
+        `<p>Cuando finalmente mides, obtienes un solo resultado, pero cuál de todos los resultados posibles va a salir es, hasta donde sabemos, genuinamente aleatorio —no por ignorancia, sino por naturaleza—. Esto incomodó tanto a Einstein que pasó buena parte de su vida buscando una teoría más profunda que devolviera la certeza a la física. Nunca la encontró: hasta hoy, la aleatoriedad cuántica parece ser real, no aparente.</p>`
+      ]
+    },
+    outside: {
+      title: '¿Por qué fallan las matemáticas fuera de la física?',
+      pages: [
+        `<p>En física, un planeta orbitando una estrella depende de muy pocas variables: masa, distancia, velocidad. Eso permite escribir una fórmula limpia como F = Gm₁m₂/r² que describe el sistema casi por completo.</p>
+         <p>Un organismo vivo o una economía nacional dependen de <strong>miles de variables interconectadas</strong> a la vez: genes, clima, decisiones humanas, instituciones, expectativas... Ninguna fórmula corta puede capturar todo eso.</p>`,
+        `<p>Además, estos sistemas suelen tener <strong>retroalimentación</strong>: el resultado de hoy cambia las reglas de mañana. Si los inversionistas creen que un banco va a quebrar, empiezan a retirar su dinero — y eso mismo provoca que el banco quiebre. La predicción cambia lo que predice.</p>
+         <p>Esto los conecta con la <strong>teoría del caos</strong> que ya viste: pequeños cambios se amplifican de forma no lineal, haciendo que incluso un modelo correcto pierda precisión rápidamente.</p>`,
+        `<p>Por último está el <strong>factor humano</strong>. Los átomos no deciden desobedecer la gravedad, pero las personas sí cambian de opinión, actúan por emoción o reaccionan a rumores. La economía y la biología no obedecen una ley universal fija como la gravedad — dependen de agentes que aprenden, se adaptan y a veces actúan de forma irracional.</p>
+         <p>Por eso los modelos matemáticos ahí funcionan como aproximaciones útiles, nunca como leyes exactas.</p>`
+      ]
+    }
+  };
+
+  let bookKey = null;
+  let bookPage = 0;
+
+  const bookOverlay = document.getElementById('bookOverlay');
+  const bookTitleEl = document.getElementById('bookTitle');
+  const bookPageEl = document.getElementById('bookPage');
+  const bookCountEl = document.getElementById('bookCount');
+  const bookPrevBtn = document.getElementById('bookPrev');
+  const bookNextBtn = document.getElementById('bookNext');
+  const bookCloseBtn = document.getElementById('bookClose');
+
+  function renderBookPage(direction){
+    const data = bookData[bookKey];
+    bookPageEl.style.opacity = 0;
+    bookPageEl.style.transform = direction === 'prev' ? 'rotateY(18deg)' : 'rotateY(-18deg)';
+    setTimeout(() => {
+      bookPageEl.innerHTML = data.pages[bookPage];
+      bookPageEl.style.transform = direction === 'prev' ? 'rotateY(-14deg)' : 'rotateY(14deg)';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bookPageEl.style.transform = 'rotateY(0deg)';
+          bookPageEl.style.opacity = 1;
+        });
+      });
+      bookCountEl.textContent = (bookPage + 1) + ' / ' + data.pages.length;
+      bookPrevBtn.disabled = bookPage === 0;
+      bookNextBtn.disabled = bookPage === data.pages.length - 1;
+      bookOverlay.querySelector('.book-stage').scrollTop = 0;
+    }, 180);
+  }
+
+  function openBook(key){
+    bookKey = key;
+    bookPage = 0;
+    bookTitleEl.textContent = bookData[key].title;
+    bookOverlay.classList.add('open');
+    renderBookPage('next');
+  }
+
+  function closeBook(){
+    bookOverlay.classList.remove('open');
+  }
+
+  document.querySelectorAll('[data-book]').forEach(btn => {
+    btn.addEventListener('click', () => openBook(btn.dataset.book));
+  });
+  bookCloseBtn.addEventListener('click', closeBook);
+  bookOverlay.addEventListener('click', (e) => { if(e.target === bookOverlay) closeBook(); });
+  bookPrevBtn.addEventListener('click', () => { if(bookPage > 0){ bookPage--; renderBookPage('prev'); } });
+  bookNextBtn.addEventListener('click', () => {
+    const data = bookData[bookKey];
+    if(bookPage < data.pages.length - 1){ bookPage++; renderBookPage('next'); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if(!bookOverlay.classList.contains('open')) return;
+    if(e.key === 'Escape') closeBook();
+  });
+</script>
+</body>
+</html>
