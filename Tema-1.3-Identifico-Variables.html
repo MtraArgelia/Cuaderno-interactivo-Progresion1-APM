@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>¿Cómo identifico las variables de un fenómeno? · Tema 1.3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF6EC;
+    --paper-2:#F3ECDD;
+    --ink:#1E2A44;
+    --ink-soft:#4A5570;
+    --teal:#12897A;
+    --teal-bg:#DFF2EE;
+    --teal-line:#9FD6CB;
+    --coral:#E1552F;
+    --coral-bg:#FCE7DF;
+    --coral-line:#F3B79E;
+    --purple:#6C58A8;
+    --purple-bg:#EBE6F6;
+    --purple-line:#C6B8E8;
+    --gold:#EFA23A;
+    --white:#FFFFFF;
+    --shadow: 0 6px 0 rgba(30,42,68,0.10);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Nunito Sans', sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  h1,h2,h3,.display{
+    font-family:'Baloo 2', sans-serif;
+    color:var(--ink);
+    margin:0;
+  }
+
+  /* ---------- DECK SHELL ---------- */
+  .app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100dvh;
+  }
+  .deck{
+    position:relative;
+    flex:1 1 auto;
+    overflow:hidden;
+  }
+  .slide{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:28px 22px 22px;
+    opacity:0;
+    transform:translateX(28px);
+    pointer-events:none;
+    transition:opacity .38s ease, transform .38s ease;
+    overflow-y:auto;
+  }
+  .slide.active{
+    opacity:1;
+    transform:translateX(0);
+    pointer-events:auto;
+  }
+  .slide.leaving-left{transform:translateX(-28px);}
+  .slide-inner{
+    max-width:640px;
+    width:100%;
+    margin:0 auto;
+  }
+
+  /* ---------- HERO SLIDE ---------- */
+  .slide-hero{
+    background:
+      radial-gradient(circle at 15% 20%, rgba(239,162,58,0.18), transparent 45%),
+      radial-gradient(circle at 85% 0%, rgba(18,137,122,0.16), transparent 40%),
+      var(--ink);
+  }
+  .slide-hero .slide-inner{text-align:center;}
+  .kicker{
+    font-size:0.9rem;
+    letter-spacing:0.02em;
+    color:#C9D3E8;
+    margin-bottom:10px;
+    font-weight:700;
+  }
+  .slide-hero h1{
+    color:var(--paper);
+    font-size:clamp(1.4rem, 5.2vw, 2.2rem);
+    font-weight:700;
+    max-width:16ch;
+    margin:0 auto 14px;
+    line-height:1.18;
+  }
+  .slide-hero p{
+    max-width:48ch;
+    margin:0 auto;
+    color:#DCE3F2;
+    font-size:1rem;
+  }
+  .icons{
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    margin-top:26px;
+    font-size:1.8rem;
+  }
+  .icons span{display:inline-block;animation: float 3.2s ease-in-out infinite;}
+  .icons span:nth-child(2){animation-delay:.4s;}
+  .icons span:nth-child(3){animation-delay:.8s;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+  .eyebrow{
+    color:var(--ink-soft);
+    font-weight:700;
+    font-size:0.9rem;
+    margin-bottom:6px;
+    text-align:center;
+  }
+  .section-title{
+    font-size:clamp(1.15rem, 4vw, 1.5rem);
+    margin-bottom:10px;
+    text-align:center;
+  }
+  .lead{
+    color:var(--ink-soft);
+    font-size:0.96rem;
+    max-width:50ch;
+    margin:0 auto 20px;
+    text-align:center;
+  }
+
+  /* ---------- FLIP CARDS ---------- */
+  .questions{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+  @media (max-width:640px){.questions{grid-template-columns:1fr;}}
+  .flip{perspective:1200px;height:160px;cursor:pointer;}
+  .flip-inner{
+    position:relative;width:100%;height:100%;
+    transition:transform .55s cubic-bezier(.4,.2,.2,1);
+    transform-style:preserve-3d;
+  }
+  .flip.is-flipped .flip-inner{transform:rotateY(180deg);}
+  .flip-face{
+    position:absolute;inset:0;
+    -webkit-backface-visibility:hidden;backface-visibility:hidden;
+    border-radius:16px;padding:16px;
+    display:flex;flex-direction:column;justify-content:center;
+    box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);
+  }
+  .flip-front{background:var(--white);}
+  .flip-front .num{font-family:'Baloo 2',sans-serif;font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:4px;}
+  .flip-front p{margin:0;font-weight:700;font-size:0.95rem;}
+  .flip-front .tap{margin-top:8px;font-size:0.8rem;color:var(--ink-soft);font-style:italic;}
+  .flip-back{transform:rotateY(180deg);color:var(--white);text-align:left;}
+  .flip-back .tag{font-weight:800;font-size:1rem;margin-bottom:6px;display:block;}
+  .flip-back p{margin:0;font-size:0.86rem;color:rgba(255,255,255,0.92);}
+  .q1 .flip-back{background:var(--teal);}
+  .q2 .flip-back{background:var(--coral);}
+  .q3 .flip-back{background:var(--purple);}
+
+  /* ---------- SPRING DEMO ---------- */
+  .lab{background:var(--white);border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .lab-grid{display:grid;grid-template-columns:0.9fr 1.1fr;gap:16px;align-items:center;}
+  @media (max-width:640px){.lab-grid{grid-template-columns:1fr;}}
+  .spring-stage{background:var(--paper-2);border-radius:14px;display:flex;align-items:center;justify-content:center;padding:8px;}
+  .spring-stage svg{width:100%;max-width:170px;height:auto;}
+  .controls label{font-weight:800;display:block;margin-bottom:4px;color:var(--teal);font-size:0.92rem;}
+  input[type=range]{width:100%;accent-color:var(--teal);height:6px;}
+  .readout{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .chip{border-radius:12px;padding:8px 12px;font-weight:700;font-size:0.86rem;flex:1 1 120px;}
+  .chip.mass{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-line);}
+  .chip.stretch{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral-line);}
+  .chip small{display:block;font-weight:600;opacity:0.85;font-size:0.74rem;margin-top:2px;}
+  .controlled-note{margin-top:10px;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);border-radius:12px;padding:8px 12px;font-weight:700;font-size:0.82rem;}
+  .var-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .var-pill{flex:1 1 160px;border-radius:12px;padding:10px 12px;}
+  .var-pill h4{margin:0 0 3px;font-family:'Baloo 2',sans-serif;font-size:0.9rem;}
+  .var-pill p{margin:0;font-size:0.8rem;}
+  .var-pill.ind{background:var(--teal-bg);color:var(--teal);}
+  .var-pill.dep{background:var(--coral-bg);color:var(--coral);}
+  .var-pill.ctrl{background:var(--purple-bg);color:var(--purple);}
+
+  /* ---------- MNEMONIC ---------- */
+  .mnemonic{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--white);border:1px solid rgba(30,42,68,0.08);border-radius:18px;padding:20px;box-shadow:var(--shadow);text-align:center;}
+  .mnemonic .word{font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.98rem;padding:9px 14px;border-radius:12px;}
+  .mnemonic .word.a{background:var(--teal-bg);color:var(--teal);}
+  .mnemonic .word.b{background:var(--coral-bg);color:var(--coral);}
+  .mnemonic .word.c{background:var(--purple-bg);color:var(--purple);}
+  .mnemonic .arrow{color:var(--ink-soft);font-size:1.15rem;}
+  .mnemonic-caption{text-align:center;color:var(--ink-soft);font-size:0.86rem;margin-top:12px;font-style:italic;max-width:48ch;margin-left:auto;margin-right:auto;}
+
+  /* ---------- PRACTICE ---------- */
+  .practice{background:var(--white);border-radius:20px;padding:18px 18px 20px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .practice .scenario{background:var(--paper-2);border-radius:14px;padding:14px 16px;margin-bottom:16px;font-weight:700;font-size:0.94rem;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-weight:800;margin-bottom:4px;font-size:0.9rem;}
+  .field label.ind{color:var(--teal);}
+  .field label.dep{color:var(--coral);}
+  .field label.ctrl{color:var(--purple);}
+  .field input{width:100%;padding:10px 12px;border-radius:10px;border:2px solid #E3DCC9;font-family:inherit;font-size:0.95rem;background:var(--paper);transition:border-color .2s, background .2s;}
+  .field input:focus{outline:none;border-color:var(--gold);background:var(--white);}
+  .field .feedback{margin-top:5px;font-size:0.84rem;font-weight:700;min-height:1.2em;}
+  .field.correct input{border-color:var(--teal);background:var(--teal-bg);}
+  .field.correct .feedback{color:var(--teal);}
+  .field.incorrect input{border-color:var(--coral);}
+  .field.incorrect .feedback{color:var(--coral);}
+  .check-btn{display:inline-block;background:var(--gold);color:var(--ink);border:none;border-radius:12px;padding:12px 22px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.98rem;cursor:pointer;box-shadow:0 5px 0 #C77E1F;transition:transform .08s;}
+  .check-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #C77E1F;}
+  .practice-summary{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--paper-2);font-weight:700;font-size:0.9rem;display:none;}
+  .practice-summary.show{display:block;}
+
+  /* ---------- CTA SLIDE ---------- */
+  .slide-cta .slide-inner{text-align:center;}
+  .cta-badge{font-size:2.4rem;margin-bottom:14px;}
+  .slide-cta h2{font-size:clamp(1.2rem,4.4vw,1.7rem);margin-bottom:10px;}
+  .slide-cta p{color:var(--ink-soft);font-size:1rem;max-width:44ch;margin:0 auto;}
+  .slide-cta .pill{
+    display:inline-block;margin-top:20px;background:var(--teal);color:var(--white);
+    font-family:'Baloo 2',sans-serif;font-weight:700;padding:12px 22px;border-radius:14px;
+  }
+
+  /* ---------- NAV BAR ---------- */
+  .navbar{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 18px;
+    background:var(--white);
+    border-top:1px solid rgba(30,42,68,0.08);
+  }
+  .nav-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:12px;
+    padding:10px 16px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:0.9rem;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .nav-btn:disabled{opacity:0.3;cursor:default;}
+  .dots{display:flex;gap:7px;}
+  .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:#DED4BC;
+    cursor:pointer;
+    border:none;
+    padding:0;
+    transition:background .2s, transform .2s;
+  }
+  .dot.active{background:var(--gold);transform:scale(1.3);}
+  .slide-count{
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    font-weight:700;
+    min-width:40px;
+    text-align:center;
+  }
+
+  ::selection{background:var(--gold);color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="deck" id="deck">
+
+    <div class="slide slide-hero active" data-slide>
+      <div class="slide-inner">
+        <div class="kicker">Progresión 1 · Matemáticas y física · Tema 1.3</div>
+        <h1>¿Cómo identifico las variables de un fenómeno?</h1>
+        <p>Todo fenómeno que observas esconde relaciones entre cantidades que cambian. Aprende a descubrirlas haciéndote tres preguntas sencillas.</p>
+        <div class="icons"><span>🔍</span><span>🌱</span><span>🧪</span></div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Para empezar</div>
+        <h2 class="section-title">Ponte en el papel de quien experimenta</h2>
+        <p class="lead">Imagina que tú vas a realizar el experimento. Toca cada tarjeta para descubrir qué variable esconde cada pregunta.</p>
+        <div class="questions">
+          <div class="flip q1" data-flip>
+            <div class="flip-inner">
+              <div class="flip-face flip-front">
+                <div class="num">①</div>
+                <p>¿Qué puedo cambiar intencionalmente?</p>
+                <div class="tap">Toca para descubrir</div>
+              </div>
+              <div class="flip-face flip-back">
+                <span class="tag">Variable independiente</span>
+                <p>Es la cantidad que tú decides modificar para observar qué ocurre.</p>
+              </div>
+            </div>
+          </div>
+          <div class="flip q2" data-flip>
+            <div class="flip-inner">
+              <div class="flip-face flip-front">
+                <div class="num">②</div>
+                <p>¿Qué cambia como consecuencia?</p>
+                <div class="tap">Toca para descubrir</div>
+              </div>
+              <div class="flip-face flip-back">
+                <span class="tag">Variable dependiente</span>
+                <p>Es la cantidad que observas o mides después de cambiar la variable independiente.</p>
+              </div>
+            </div>
+          </div>
+          <div class="flip q3" data-flip>
+            <div class="flip-inner">
+              <div class="flip-face flip-front">
+                <div class="num">③</div>
+                <p>¿Qué debo mantener igual?</p>
+                <div class="tap">Toca para descubrir</div>
+              </div>
+              <div class="flip-face flip-back">
+                <span class="tag">Variables controladas</span>
+                <p>Condiciones que podrían afectar el resultado, pero se mantienen constantes para que la comparación sea justa.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🧪 Experimenta tú mismo</div>
+        <h2 class="section-title">Ejemplo: el resorte</h2>
+        <p class="lead">Cuelga distintas masas del mismo resorte y observa qué pasa.</p>
+        <div class="lab">
+          <div class="lab-grid">
+            <div class="spring-stage">
+              <svg viewBox="0 0 200 340" id="springSVG">
+                <line x1="60" y1="20" x2="140" y2="20" stroke="#1E2A44" stroke-width="8" stroke-linecap="round"/>
+                <line x1="70" y1="20" x2="70" y2="8" stroke="#1E2A44" stroke-width="4"/>
+                <line x1="130" y1="20" x2="130" y2="8" stroke="#1E2A44" stroke-width="4"/>
+                <path id="springPath" d="" fill="none" stroke="#12897A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect id="massBox" x="80" y="150" width="40" height="40" rx="6" fill="#E1552F"/>
+                <text id="massLabel" x="100" y="0" text-anchor="middle" fill="#FBF6EC" font-size="13" font-weight="700" font-family="Nunito Sans, sans-serif"></text>
+              </svg>
+            </div>
+            <div class="controls">
+              <label for="massSlider">Masa que cuelgo (g)</label>
+              <input type="range" id="massSlider" min="50" max="500" step="10" value="150">
+              <div class="readout">
+                <div class="chip mass"><span id="massValue">150 g</span><small>Lo que yo cambio</small></div>
+                <div class="chip stretch"><span id="stretchValue">3.8 cm</span><small>Lo que se observa</small></div>
+              </div>
+              <div class="controlled-note">🔒 El resorte y el soporte — no cambian en todo el experimento.</div>
+            </div>
+          </div>
+          <div class="var-row">
+            <div class="var-pill ind"><h4>Independiente</h4><p>La masa que cuelgo.</p></div>
+            <div class="var-pill dep"><h4>Dependiente</h4><p>Cuánto se alarga el resorte.</p></div>
+            <div class="var-pill ctrl"><h4>Controladas</h4><p>Resorte, soporte y condiciones.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🧠 Recuerda</div>
+        <div class="mnemonic">
+          <span class="word a">Cambio</span>
+          <span class="arrow">→</span>
+          <span class="word b">Respuesta</span>
+          <span class="arrow">→</span>
+          <span class="word c">Condiciones constantes</span>
+        </div>
+        <p class="mnemonic-caption">No memorices solamente los nombres. Primero piensa en lo que ocurre en el experimento y después identifica cada variable.</p>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🎯 Ahora inténtalo tú</div>
+        <h2 class="section-title">El experimento de la planta</h2>
+        <div class="practice">
+          <div class="scenario">🌱 Quieres saber si una planta crece más cuando recibe diferentes cantidades de agua.</div>
+          <div class="field" id="field1">
+            <label class="ind" for="input1">¿Qué cambiarías?</label>
+            <input type="text" id="input1" placeholder="Escribe tu respuesta...">
+            <div class="feedback"></div>
+          </div>
+          <div class="field" id="field2">
+            <label class="dep" for="input2">¿Qué medirías?</label>
+            <input type="text" id="input2" placeholder="Escribe tu respuesta...">
+            <div class="feedback"></div>
+          </div>
+          <div class="field" id="field3">
+            <label class="ctrl" for="input3">¿Qué mantendrías igual?</label>
+            <input type="text" id="input3" placeholder="Escribe tu respuesta...">
+            <div class="feedback"></div>
+          </div>
+          <button class="check-btn" id="checkBtn">Revisar mis respuestas</button>
+          <div class="practice-summary" id="summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide slide-cta" data-slide>
+      <div class="slide-inner">
+        <div class="cta-badge">👏</div>
+        <h2>¡Ya sabes identificar variables!</h2>
+        <p>Regresa al cuadernillo y resuelve el <strong>Nivel 2 · Practico</strong> del Tema 1.3.</p>
+        <div class="pill">Nivel 2 · Practico →</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="navbar">
+    <button class="nav-btn" id="prevBtn">← Atrás</button>
+    <div class="dots" id="dots"></div>
+    <span class="slide-count" id="slideCount">1 / 6</span>
+    <button class="nav-btn" id="nextBtn">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+  // ---- Slide deck engine ----
+  var slides = Array.prototype.slice.call(document.querySelectorAll('[data-slide]'));
+  var dotsWrap = document.getElementById('dots');
+  var current = 0;
+
+  slides.forEach(function(_, i){
+    var d = document.createElement('button');
+    d.className = 'dot' + (i===0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Ir a la diapositiva ' + (i+1));
+    d.addEventListener('click', function(){ goTo(i); });
+    dotsWrap.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var slideCount = document.getElementById('slideCount');
+
+  function render(){
+    slides.forEach(function(s, i){
+      s.classList.remove('active','leaving-left');
+      if(i === current){ s.classList.add('active'); }
+      else if(i < current){ s.classList.add('leaving-left'); }
+    });
+    dots.forEach(function(d, i){ d.classList.toggle('active', i===current); });
+    prevBtn.disabled = current === 0;
+    nextBtn.textContent = current === slides.length-1 ? 'Reiniciar ↺' : 'Siguiente →';
+    slideCount.textContent = (current+1) + ' / ' + slides.length;
+  }
+
+  function goTo(i){
+    current = Math.max(0, Math.min(slides.length-1, i));
+    render();
+  }
+
+  prevBtn.addEventListener('click', function(){ goTo(current-1); });
+  nextBtn.addEventListener('click', function(){
+    if(current === slides.length-1){ goTo(0); } else { goTo(current+1); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight'){ goTo(current+1); }
+    if(e.key === 'ArrowLeft'){ goTo(current-1); }
+  });
+
+  // basic swipe support
+  var touchStartX = null;
+  var deck = document.getElementById('deck');
+  deck.addEventListener('touchstart', function(e){ touchStartX = e.changedTouches[0].clientX; }, {passive:true});
+  deck.addEventListener('touchend', function(e){
+    if(touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 50){ dx < 0 ? goTo(current+1) : goTo(current-1); }
+    touchStartX = null;
+  }, {passive:true});
+
+  render();
+
+  // ---- Flip cards ----
+  document.querySelectorAll('[data-flip]').forEach(function(card){
+    card.addEventListener('click', function(){ card.classList.toggle('is-flipped'); });
+  });
+
+  // ---- Spring demo ----
+  var slider = document.getElementById('massSlider');
+  var massValue = document.getElementById('massValue');
+  var stretchValue = document.getElementById('stretchValue');
+  var springPath = document.getElementById('springPath');
+  var massBox = document.getElementById('massBox');
+  var massLabel = document.getElementById('massLabel');
+
+  var topY = 20, naturalLen = 90, segments = 9;
+
+  function drawSpring(mass){
+    var stretch = (mass - 50) * 0.16;
+    var stretchPx = stretch * 6;
+    var totalLen = naturalLen + stretchPx;
+    var segH = totalLen / segments;
+    var cx = 100, amp = 22;
+    var d = 'M ' + cx + ' ' + topY;
+    for(var i=1;i<=segments;i++){
+      var y = topY + segH*i;
+      var x = (i % 2 === 0) ? cx : (i % 4 === 1 ? cx - amp : cx + amp);
+      d += ' L ' + x + ' ' + y;
+    }
+    springPath.setAttribute('d', d);
+    var bottomY = topY + totalLen;
+    var boxSize = 34 + (mass/500)*24;
+    massBox.setAttribute('x', cx - boxSize/2);
+    massBox.setAttribute('y', bottomY);
+    massBox.setAttribute('width', boxSize);
+    massBox.setAttribute('height', boxSize);
+    massLabel.setAttribute('x', cx);
+    massLabel.setAttribute('y', bottomY + boxSize/2 + 5);
+    massLabel.textContent = mass + ' g';
+    massValue.textContent = mass + ' g';
+    stretchValue.textContent = stretch.toFixed(1) + ' cm';
+  }
+  slider.addEventListener('input', function(){ drawSpring(parseInt(slider.value,10)); });
+  drawSpring(parseInt(slider.value,10));
+
+  // ---- Practice: keyword check ----
+  function normalize(s){
+    return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  }
+  var keywords = {
+    1: ['agua','cantidad de agua','riego','cantidad de riego','mililitros','litros','ml','cantidad de liquido'],
+    2: ['crecimiento','altura','tamano','tamaño','crece','altura de la planta','centimetros','cm','cuanto crece'],
+    3: ['tierra','suelo','maceta','luz','sol','tipo de planta','especie','temperatura','recipiente','tipo de tierra','planta','misma planta','misma maceta']
+  };
+  function checkField(num, type){
+    var input = document.getElementById('input'+num);
+    var field = document.getElementById('field'+num);
+    var feedback = field.querySelector('.feedback');
+    var val = normalize(input.value);
+    var hit = val.length>0 && keywords[num].some(function(k){ return val.indexOf(normalize(k)) !== -1; });
+    field.classList.remove('correct','incorrect');
+    if(val.length === 0){ feedback.textContent=''; return null; }
+    if(hit){ field.classList.add('correct'); feedback.textContent='✓ ¡Así es! Coincide con la variable ' + type + '.'; return true; }
+    field.classList.add('incorrect'); feedback.textContent='🤔 Piénsalo de nuevo — revisa la pista abajo.'; return false;
+  }
+  document.getElementById('checkBtn').addEventListener('click', function(){
+    var r1 = checkField(1, 'independiente (la cantidad de agua)');
+    var r2 = checkField(2, 'dependiente (el crecimiento de la planta)');
+    var r3 = checkField(3, 'controlada (tierra, luz, tipo de planta...)');
+    var summary = document.getElementById('summary');
+    var correctCount = [r1,r2,r3].filter(function(r){return r===true;}).length;
+    var answered = [r1,r2,r3].filter(function(r){return r!==null;}).length;
+    summary.classList.add('show');
+    if(answered === 0){ summary.textContent = 'Escribe tus tres respuestas antes de revisar. ✏️'; }
+    else if(correctCount === 3){ summary.textContent = '🌟 ¡Excelente! La cantidad de agua es lo que cambias (independiente), el crecimiento de la planta es lo que mides (dependiente), y tierra, luz y tipo de planta se mantienen igual (controlada).'; }
+    else { summary.textContent = 'Vas bien, revisa las respuestas marcadas en rojo. Pista: piensa primero qué decides cambiar tú, luego qué observas como resultado, y por último qué debe quedarse exactamente igual.'; }
+  });
+</script>
+
+</body>
+</html>
