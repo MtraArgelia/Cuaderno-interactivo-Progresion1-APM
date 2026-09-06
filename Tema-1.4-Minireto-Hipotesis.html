@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-<title>¿Cómo piensan los científicos antes de experimentar? · Tema 1.5</title>
+<title>¿Cómo piensan los científicos antes de experimentar? · Tema 1.4</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
@@ -117,8 +117,8 @@
   }
   .classify-card .feedback{margin-top:10px;font-size:0.86rem;font-weight:700;display:none;padding:8px 10px;border-radius:10px;}
   .classify-card .feedback.show{display:block;}
-  .classify-card.correct .feedback{background:var(--teal-bg);color:var(--teal);}
-  .classify-card.incorrect .feedback{background:var(--coral-bg);color:var(--coral);}
+  .classify-card .feedback.feedback-correct{background:var(--teal-bg);color:var(--teal);}
+  .classify-card .feedback.feedback-incorrect{background:var(--coral-bg);color:var(--coral);}
   .classify-btns button.picked-correct{background:var(--teal);color:var(--white);border-color:var(--teal);}
   .classify-btns button.picked-incorrect{background:var(--coral);color:var(--white);border-color:var(--coral);}
   .classify-btns button:disabled{cursor:default;}
@@ -213,7 +213,7 @@
 
     <div class="slide slide-hero active" data-slide>
       <div class="slide-inner">
-        <div class="kicker">Progresión 1 · Matemáticas y física · Tema 1.5</div>
+        <div class="kicker">Progresión 1 · Matemáticas y física · Tema 1.4</div>
         <h1>¿Cómo piensan los científicos antes de experimentar?</h1>
         <p>Antes de medir cualquier cosa, un científico propone una explicación que se pueda poner a prueba: una hipótesis.</p>
         <div class="icons"><span>🔬</span><span>💭</span><span>📐</span></div>
@@ -278,7 +278,8 @@
             <button data-choice="si">Es hipótesis</button>
             <button data-choice="no">No es hipótesis</button>
           </div>
-          <div class="feedback">❌ No es hipótesis: es una opinión, no relaciona variables ni puede comprobarse.</div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! No es hipótesis: es una opinión, no relaciona variables ni puede comprobarse.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: esta frase solo expresa una opinión personal, no relaciona variables ni se puede comprobar — por eso NO es hipótesis.</div>
         </div>
 
         <div class="classify-card" data-classify data-correct="si">
@@ -287,7 +288,8 @@
             <button data-choice="si">Es hipótesis</button>
             <button data-choice="no">No es hipótesis</button>
           </div>
-          <div class="feedback">✅ Sí es hipótesis: relaciona dos variables y puede comprobarse con una medición.</div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! Sí es hipótesis: relaciona dos variables y puede comprobarse con una medición.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: esta frase SÍ relaciona dos variables (masa y alargamiento) y se puede comprobar con una medición — por eso SÍ es hipótesis.</div>
         </div>
 
         <div class="classify-card" data-classify data-correct="no">
@@ -296,7 +298,8 @@
             <button data-choice="si">Es hipótesis</button>
             <button data-choice="no">No es hipótesis</button>
           </div>
-          <div class="feedback">❌ No es hipótesis: expresa una expectativa personal, no relaciona variables medibles.</div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! No es hipótesis: expresa una expectativa personal, no relaciona variables medibles.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: esta frase solo expresa una expectativa personal, sin relacionar variables medibles — por eso NO es hipótesis.</div>
         </div>
       </div>
     </div>
@@ -450,7 +453,8 @@
   document.querySelectorAll('[data-classify]').forEach(function(card){
     var correct = card.getAttribute('data-correct');
     var buttons = card.querySelectorAll('.classify-btns button');
-    var feedback = card.querySelector('.feedback');
+    var fbCorrect = card.querySelector('.feedback-correct');
+    var fbIncorrect = card.querySelector('.feedback-incorrect');
     buttons.forEach(function(btn){
       btn.addEventListener('click', function(){
         var choice = btn.getAttribute('data-choice');
@@ -458,11 +462,13 @@
         if(choice === correct){
           btn.classList.add('picked-correct');
           card.classList.add('correct');
+          fbCorrect.classList.add('show');
         } else {
           btn.classList.add('picked-incorrect');
           card.classList.add('incorrect');
+          card.querySelector('.classify-btns button[data-choice="'+correct+'"]').classList.add('picked-correct');
+          fbIncorrect.classList.add('show');
         }
-        feedback.classList.add('show');
       });
     });
   });
