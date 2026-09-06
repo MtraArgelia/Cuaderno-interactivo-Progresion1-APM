@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>De la observación a la descripción técnica · Tema 1.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito+Sans:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF6EC; --paper-2:#F3ECDD; --ink:#1E2A44; --ink-soft:#4A5570;
+    --teal:#12897A; --teal-bg:#DFF2EE; --teal-line:#9FD6CB;
+    --coral:#E1552F; --coral-bg:#FCE7DF; --coral-line:#F3B79E;
+    --purple:#6C58A8; --purple-bg:#EBE6F6; --purple-line:#C6B8E8;
+    --gold:#EFA23A; --white:#FFFFFF;
+    --shadow: 0 6px 0 rgba(30,42,68,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Nunito Sans', sans-serif; line-height:1.55;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Baloo 2', sans-serif;color:var(--ink);margin:0;}
+
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+  .deck{position:relative;flex:1 1 auto;overflow:hidden;}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding:28px 22px 22px; opacity:0;transform:translateX(28px);pointer-events:none;
+    transition:opacity .38s ease, transform .38s ease; overflow-y:auto;
+  }
+  .slide.active{opacity:1;transform:translateX(0);pointer-events:auto;}
+  .slide.leaving-left{transform:translateX(-28px);}
+  .slide-inner{max-width:640px;width:100%;margin-left:auto;margin-right:auto;margin-top:auto;margin-bottom:auto;}
+
+  .slide-hero{
+    background:
+      radial-gradient(circle at 15% 20%, rgba(239,162,58,0.18), transparent 45%),
+      radial-gradient(circle at 85% 0%, rgba(18,137,122,0.16), transparent 40%),
+      var(--ink);
+  }
+  .slide-hero .slide-inner{text-align:center;}
+  .kicker{font-size:0.9rem;letter-spacing:0.02em;color:#C9D3E8;margin-bottom:10px;font-weight:700;}
+  .slide-hero h1{color:var(--paper);font-size:clamp(1.35rem, 5vw, 2.1rem);font-weight:700;max-width:22ch;margin:0 auto 14px;line-height:1.18;}
+  .slide-hero p{max-width:48ch;margin:0 auto;color:#DCE3F2;font-size:1rem;}
+  .icons{display:flex;justify-content:center;gap:22px;margin-top:26px;font-size:1.8rem;}
+  .icons span{display:inline-block;animation: float 3.2s ease-in-out infinite;}
+  .icons span:nth-child(2){animation-delay:.4s;}
+  .icons span:nth-child(3){animation-delay:.8s;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+  .eyebrow{color:var(--ink-soft);font-weight:700;font-size:0.9rem;margin-bottom:6px;text-align:center;}
+  .section-title{font-size:clamp(1.1rem, 3.8vw, 1.45rem);margin-bottom:10px;text-align:center;}
+  .lead{color:var(--ink-soft);font-size:0.95rem;max-width:52ch;margin:0 auto 18px;text-align:center;}
+
+  .def-card{
+    background:var(--white);border:1px solid rgba(30,42,68,0.08);border-radius:18px;
+    padding:18px 20px;box-shadow:var(--shadow);text-align:center;margin-bottom:14px;
+  }
+  .def-card p{margin:0 0 10px;font-size:0.96rem;}
+  .def-card p:last-child{margin-bottom:0;}
+  .checklist-mini{list-style:none;padding:0;margin:14px 0 0;text-align:left;display:grid;gap:8px;}
+  .checklist-mini li{background:var(--paper-2);border-radius:12px;padding:10px 14px;font-size:0.9rem;font-weight:700;}
+  .checklist-mini b{color:var(--teal);}
+
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:560px){.compare{grid-template-columns:1fr;}}
+  .compare-card{border-radius:16px;padding:16px 16px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .compare-card h4{font-family:'Baloo 2',sans-serif;font-size:0.98rem;margin:0 0 8px;}
+  .compare-card p{font-size:0.86rem;margin:0;}
+  .compare-card.bad{background:var(--coral-bg);}
+  .compare-card.bad h4{color:var(--coral);}
+  .compare-card.good{background:var(--teal-bg);}
+  .compare-card.good h4{color:var(--teal);}
+
+  .classify-card{
+    background:var(--white);border-radius:16px;padding:16px 18px;margin-bottom:12px;
+    box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);
+  }
+  .classify-card .statement{font-weight:700;font-size:0.95rem;margin-bottom:10px;}
+  .classify-btns{display:flex;gap:8px;}
+  .classify-btns button{
+    flex:1;padding:9px 10px;border-radius:10px;border:2px solid #E3DCC9;background:var(--paper);
+    font-family:'Nunito Sans',sans-serif;font-weight:700;font-size:0.84rem;cursor:pointer;
+  }
+  .classify-card .feedback{margin-top:10px;font-size:0.86rem;font-weight:700;display:none;padding:8px 10px;border-radius:10px;}
+  .classify-card .feedback.show{display:block;}
+  .classify-card .feedback.feedback-correct{background:var(--teal-bg);color:var(--teal);}
+  .classify-card .feedback.feedback-incorrect{background:var(--coral-bg);color:var(--coral);}
+  .classify-btns button.picked-correct{background:var(--teal);color:var(--white);border-color:var(--teal);}
+  .classify-btns button.picked-incorrect{background:var(--coral);color:var(--white);border-color:var(--coral);}
+  .classify-btns button:disabled{cursor:default;}
+
+  .build-box{background:var(--white);border-radius:20px;padding:20px 20px 22px;box-shadow:var(--shadow);border:1px solid rgba(30,42,68,0.08);}
+  .build-field{margin-bottom:12px;}
+  .build-field label{display:block;font-weight:800;margin-bottom:5px;font-size:0.92rem;color:var(--ink);}
+  .build-field input, .build-field textarea{width:100%;padding:11px 13px;border-radius:10px;border:2px solid #E3DCC9;font-family:inherit;font-size:0.94rem;background:var(--paper);}
+  .build-field textarea{min-height:70px;resize:vertical;}
+  .build-field input:focus, .build-field textarea:focus{outline:none;border-color:var(--gold);background:var(--white);}
+  .check-btn{
+    display:inline-block;background:var(--gold);color:var(--ink);border:none;border-radius:12px;
+    padding:12px 22px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.98rem;cursor:pointer;
+    box-shadow:0 5px 0 #C77E1F;transition:transform .08s;margin-top:6px;
+  }
+  .check-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #C77E1F;}
+  .build-summary{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--paper-2);font-weight:700;font-size:0.88rem;display:none;}
+  .build-summary.show{display:block;}
+
+  .checklist{display:flex;flex-direction:column;gap:10px;}
+  .check-item{
+    display:flex;align-items:center;gap:12px;background:var(--white);border:2px solid #E3DCC9;
+    border-radius:14px;padding:13px 16px;cursor:pointer;font-weight:700;font-size:0.92rem;
+    box-shadow:var(--shadow);transition:background .2s, border-color .2s;
+  }
+  .check-item .box{
+    width:22px;height:22px;border-radius:7px;border:2px solid var(--ink-soft);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:0.8rem;color:var(--white);
+  }
+  .check-item.checked{background:var(--teal-bg);border-color:var(--teal);}
+  .check-item.checked .box{background:var(--teal);border-color:var(--teal);}
+  .check-item.checked .box::after{content:'✓';}
+
+  .slide-cta .slide-inner{text-align:center;}
+  .cta-badge{font-size:2.4rem;margin-bottom:14px;}
+  .slide-cta h2{font-size:clamp(1.2rem,4.4vw,1.7rem);margin-bottom:10px;}
+  .slide-cta p{color:var(--ink-soft);font-size:1rem;max-width:46ch;margin:0 auto;}
+  .slide-cta .reminder{
+    margin-top:16px;background:var(--paper-2);border-radius:14px;padding:14px 18px;
+    font-style:italic;font-size:0.9rem;color:var(--ink);max-width:46ch;margin-left:auto;margin-right:auto;
+  }
+  .slide-cta .pill{display:inline-block;margin-top:20px;background:var(--teal);color:var(--white);font-family:'Baloo 2',sans-serif;font-weight:700;padding:12px 22px;border-radius:14px;text-decoration:none;cursor:pointer;transition:background .15s;}
+  .slide-cta .pill:hover{background:#0e6e62;}
+
+  .navbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;background:var(--white);border-top:1px solid rgba(30,42,68,0.08);}
+  .nav-btn{background:var(--ink);color:var(--paper);border:none;border-radius:12px;padding:10px 16px;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .nav-btn:disabled{opacity:0.3;cursor:default;}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:150px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:#DED4BC;cursor:pointer;border:none;padding:0;transition:background .2s, transform .2s;}
+  .dot.active{background:var(--gold);transform:scale(1.3);}
+  .slide-count{font-size:0.78rem;color:var(--ink-soft);font-weight:700;min-width:40px;text-align:center;}
+
+  ::selection{background:var(--gold);color:var(--ink);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="deck" id="deck">
+
+    <div class="slide slide-hero active" data-slide>
+      <div class="slide-inner">
+        <div class="kicker">Progresión 1 · Matemáticas y física · Tema 1.2</div>
+        <h1>De la observación a la descripción técnica</h1>
+        <p>No basta con ver algo — hay que saber contarlo con precisión, para que cualquier persona entienda exactamente lo mismo que tú viste.</p>
+        <div class="icons"><span>🔍</span><span>📝</span><span>🎯</span></div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 1</div>
+        <h2 class="section-title">¿Por qué importa tanto la precisión?</h2>
+        <div class="def-card">
+          <p>Una observación <strong>vaga</strong> ("se mueve", "cambia", "se ve raro") no le sirve a nadie más que a ti — y a veces ni a ti mismo/a en un par de días. Una descripción <strong>técnica</strong> tiene siempre estos elementos:</p>
+          <ul class="checklist-mini">
+            <li><b>1.</b> El estado inicial del objeto (antes de aplicar nada)</li>
+            <li><b>2.</b> Qué se le aplica exactamente (una fuerza, un peso, una acción)</li>
+            <li><b>3.</b> Qué cambia como consecuencia, y cómo se nota</li>
+            <li><b>4.</b> Si regresa o no a su estado original al quitar lo que se aplicó</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Sección 2</div>
+        <h2 class="section-title">Compara las dos descripciones</h2>
+        <div class="compare">
+          <div class="compare-card bad">
+            <h4>❌ Descripción vaga</h4>
+            <p>"El resorte se mueve cuando le pongo algo."</p>
+          </div>
+          <div class="compare-card good">
+            <h4>✅ Descripción técnica</h4>
+            <p>"Al colgar una masa del resorte, este se alarga desde su longitud natural una distancia proporcional al peso aplicado."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🎯 Minireto</div>
+        <h2 class="section-title">¿Vaga o técnica?</h2>
+        <p class="lead">Toca "Sí" o "No" para cada afirmación.</p>
+
+        <div class="classify-card" data-classify data-correct="no">
+          <div class="statement">"La liga se estira."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es técnica</button>
+            <button data-choice="no">Es vaga</button>
+          </div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! No dice cuánto se estira, respecto a qué, ni qué se le aplicó — falta todo lo medible.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: no dice cuánto se estira, respecto a qué longitud, ni qué fuerza se aplicó — le falta todo lo medible, por eso es vaga.</div>
+        </div>
+
+        <div class="classify-card" data-classify data-correct="si">
+          <div class="statement">"Al aplicar una fuerza de 2N a la liga, esta se alarga 3cm respecto a su longitud natural."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es técnica</button>
+            <button data-choice="no">Es vaga</button>
+          </div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! Tiene los 4 elementos: estado inicial, qué se aplicó, qué cambió y cuánto.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: sí tiene los 4 elementos completos (estado inicial, fuerza aplicada, cambio y cantidad exacta) — por eso SÍ es técnica.</div>
+        </div>
+
+        <div class="classify-card" data-classify data-correct="no">
+          <div class="statement">"Se ve raro cuando lo jalas."</div>
+          <div class="classify-btns">
+            <button data-choice="si">Es técnica</button>
+            <button data-choice="no">Es vaga</button>
+          </div>
+          <div class="feedback feedback-correct">✅ ¡Correcto! "Raro" no es un término medible ni describe nada específico — es la opinión de quien observa, no un dato.</div>
+          <div class="feedback feedback-incorrect">❌ No es así: "raro" no es un término medible ni específico — es una opinión personal, no una descripción técnica.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">🧪 Redacta la tuya</div>
+        <h2 class="section-title">Elige un objeto elástico distinto al resorte</h2>
+        <div class="build-box">
+          <p class="lead" style="margin-bottom:16px;">Puede ser una liga, un colchón, la suela de un tenis, un trampolín... Describe qué le pasa cuando le aplicas una fuerza, usando los 4 elementos que vimos.</p>
+          <div class="build-field">
+            <label for="objInput">Objeto elástico elegido</label>
+            <input type="text" id="objInput" placeholder="Ej. una liga de cabello">
+          </div>
+          <div class="build-field">
+            <label for="descInput">Tu descripción técnica completa</label>
+            <textarea id="descInput" placeholder="Al [aplicar/estirar/comprimir]... el objeto [cambia cómo]... y [regresa o no] a su forma original..."></textarea>
+          </div>
+          <button class="check-btn" id="buildBtn">Comprobar mi descripción</button>
+          <div class="build-summary" id="buildSummary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide" data-slide>
+      <div class="slide-inner">
+        <div class="eyebrow">Autoevaluación rápida</div>
+        <h2 class="section-title">Antes de continuar, verifica</h2>
+        <p class="lead">Toca cada punto que ya cumpliste.</p>
+        <div class="checklist">
+          <div class="check-item" data-check><span class="box"></span> ¿Mencioné el estado inicial del objeto?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Dije exactamente qué fuerza o acción se aplicó?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Describí qué cambió, no solo "que cambió algo"?</div>
+          <div class="check-item" data-check><span class="box"></span> ¿Evité palabras vagas como "raro", "diferente" o "cambia"?</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide slide-cta" data-slide>
+      <div class="slide-inner">
+        <div class="cta-badge">🔍</div>
+        <h2>¡Listo para describir con precisión!</h2>
+        <p>Ya sabes qué hace técnica a una descripción — una habilidad que vas a necesitar para registrar cualquier fenómeno que observes de aquí en adelante.</p>
+        <div class="reminder">Recuerda: si tu descripción no le permitiría a otra persona repetir exactamente lo que tú observaste, todavía es demasiado vaga.</div>
+        <a href="index.html" class="pill">Continúa al Nivel 2 →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="navbar">
+    <button class="nav-btn" id="prevBtn">← Atrás</button>
+    <div class="dots" id="dots"></div>
+    <span class="slide-count" id="slideCount">1 / 7</span>
+    <button class="nav-btn" id="nextBtn">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll('[data-slide]'));
+  var dotsWrap = document.getElementById('dots');
+  var current = 0;
+
+  slides.forEach(function(_, i){
+    var d = document.createElement('button');
+    d.className = 'dot' + (i===0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Ir a la diapositiva ' + (i+1));
+    d.addEventListener('click', function(){ goTo(i); });
+    dotsWrap.appendChild(d);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var slideCount = document.getElementById('slideCount');
+
+  function render(){
+    slides.forEach(function(s, i){
+      s.classList.remove('active','leaving-left');
+      if(i === current){ s.classList.add('active'); }
+      else if(i < current){ s.classList.add('leaving-left'); }
+    });
+    dots.forEach(function(d, i){ d.classList.toggle('active', i===current); });
+    prevBtn.disabled = current === 0;
+    nextBtn.textContent = current === slides.length-1 ? 'Reiniciar ↺' : 'Siguiente →';
+    slideCount.textContent = (current+1) + ' / ' + slides.length;
+  }
+
+  function goTo(i){
+    current = Math.max(0, Math.min(slides.length-1, i));
+    render();
+  }
+
+  prevBtn.addEventListener('click', function(){ goTo(current-1); });
+  nextBtn.addEventListener('click', function(){
+    if(current === slides.length-1){ goTo(0); } else { goTo(current+1); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight'){ goTo(current+1); }
+    if(e.key === 'ArrowLeft'){ goTo(current-1); }
+  });
+
+  var touchStartX = null;
+  var deck = document.getElementById('deck');
+  deck.addEventListener('touchstart', function(e){ touchStartX = e.changedTouches[0].clientX; }, {passive:true});
+  deck.addEventListener('touchend', function(e){
+    if(touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 50){ dx < 0 ? goTo(current+1) : goTo(current-1); }
+    touchStartX = null;
+  }, {passive:true});
+
+  render();
+
+  document.querySelectorAll('[data-classify]').forEach(function(card){
+    var correct = card.getAttribute('data-correct');
+    var buttons = card.querySelectorAll('.classify-btns button');
+    var fbCorrect = card.querySelector('.feedback-correct');
+    var fbIncorrect = card.querySelector('.feedback-incorrect');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var choice = btn.getAttribute('data-choice');
+        buttons.forEach(function(b){ b.disabled = true; });
+        if(choice === correct){
+          btn.classList.add('picked-correct');
+          card.classList.add('correct');
+          fbCorrect.classList.add('show');
+        } else {
+          btn.classList.add('picked-incorrect');
+          card.classList.add('incorrect');
+          card.querySelector('.classify-btns button[data-choice="'+correct+'"]').classList.add('picked-correct');
+          fbIncorrect.classList.add('show');
+        }
+      });
+    });
+  });
+
+  document.getElementById('buildBtn').addEventListener('click', function(){
+    function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+    var obj = norm(document.getElementById('objInput').value);
+    var desc = norm(document.getElementById('descInput').value);
+    var summary = document.getElementById('buildSummary');
+    summary.classList.add('show');
+
+    if(obj.length === 0 || desc.length < 15){
+      summary.textContent = '✏️ Completa el objeto y una descripción de al menos una oración antes de comprobar.';
+      return;
+    }
+    var hasEstado = /(natural|inicial|reposo|sin estirar|sin fuerza|antes de)/.test(desc);
+    var hasFuerza = /(fuerza|peso|jalar|estirar|comprimir|aplicar|newton)/.test(desc);
+    var hasCambio = /(alarga|estira|comprime|deforma|cambia|aumenta|reduce)/.test(desc);
+    var hasRegreso = /(regresa|vuelve|original|recupera|no regresa|se queda|permanente)/.test(desc);
+
+    var count = [hasEstado, hasFuerza, hasCambio, hasRegreso].filter(Boolean).length;
+    if(count >= 3){
+      summary.textContent = '✅ ¡Muy bien! Tu descripción incluye la mayoría de los elementos técnicos clave. Así se describe un fenómeno con precisión.';
+    } else {
+      var faltan = [];
+      if(!hasEstado) faltan.push('el estado inicial del objeto');
+      if(!hasFuerza) faltan.push('qué fuerza o acción se aplicó');
+      if(!hasCambio) faltan.push('qué cambió exactamente');
+      if(!hasRegreso) faltan.push('si regresa o no a su forma original');
+      summary.textContent = '🔎 Todavía le falta mencionar: ' + faltan.join('; ') + '.';
+    }
+  });
+
+  document.querySelectorAll('[data-check]').forEach(function(item){
+    item.addEventListener('click', function(){ item.classList.toggle('checked'); });
+  });
+</script>
+
+</body>
+</html>
