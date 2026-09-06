@@ -196,6 +196,7 @@
   .detail-q .qanswer{ color:#26313A; font-weight:600; margin-top:2px; }
 
   .note-banner{ background:var(--teal-light); border:1px solid var(--teal); border-radius:4px; padding:12px 16px; font-size:.82rem; color:#1a5a5b; margin-bottom:22px; line-height:1.5; }
+  .practice-banner{ background:#FFF6E5; border:1px solid var(--gold); border-radius:4px; padding:12px 16px; font-size:.85rem; color:#7a5a12; margin-bottom:14px; line-height:1.5; font-weight:600; }
   .empty-state{ text-align:center; color:var(--gray); padding:40px 10px; font-size:.92rem; }
 
   .save-toast{
@@ -203,6 +204,27 @@
     border-radius:4px; font-size:.85rem; opacity:0; transform:translateY(10px); transition:all .25s; pointer-events:none;
   }
   .save-toast.show{ opacity:1; transform:translateY(0); }
+
+  /* Chat de aprendizaje guiado */
+  .chat-toggle-btn{
+    background:none; border:1px solid var(--teal); color:var(--teal); padding:6px 14px; border-radius:20px;
+    font-size:.82rem; cursor:pointer; margin-top:10px; font-weight:600; font-family:inherit;
+  }
+  .chat-toggle-btn:hover{ background:var(--teal-light); }
+  .chat-toggle-btn.open{ background:var(--teal); color:#fff; }
+  .chat-panel{ margin-top:10px; border:1px solid var(--line); border-radius:6px; background:#FCFBF8; padding:14px; display:none; }
+  .chat-panel.open{ display:block; }
+  .chat-hint{ font-size:.76rem; color:var(--gray); margin-bottom:10px; line-height:1.4; }
+  .chat-messages{ max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:10px; padding-right:4px; }
+  .chat-bubble{ padding:9px 13px; border-radius:14px; font-size:.87rem; line-height:1.45; max-width:88%; white-space:pre-wrap; }
+  .chat-bubble.assistant{ background:var(--teal-light); color:#134a4b; align-self:flex-start; border-bottom-left-radius:3px; }
+  .chat-bubble.user{ background:var(--navy); color:#fff; align-self:flex-end; border-bottom-left-radius:14px; border-bottom-right-radius:3px; }
+  .chat-input-row{ display:flex; gap:8px; }
+  .chat-input-row input{ flex:1; font-size:.9rem; padding:8px 12px; }
+  .chat-input-row button{ background:var(--teal); color:#fff; border:none; padding:0 16px; border-radius:4px; cursor:pointer; font-weight:600; font-size:.88rem; }
+  .chat-input-row button:disabled{ opacity:.5; cursor:default; }
+  .chat-loading{ font-size:.8rem; color:var(--gray); font-style:italic; margin:4px 0 0; }
+  .chat-error{ font-size:.8rem; color:var(--red); margin:4px 0 0; }
 
   .sim-link-btn{
     display:inline-block; background:var(--teal); color:#fff; padding:10px 18px; border-radius:4px;
@@ -303,7 +325,7 @@
   @media(max-width:720px){ .fixed-actionbar{ justify-content:center; } .fixed-actionbar .who-field{ width:100%; justify-content:center; } .fixed-actionbar .actions{ width:100%; justify-content:center; } }
 
   @media print{
-    .fixed-actionbar, .topbar, .wb-nav, .note-banner, .caratula .progress-box{ display:none !important; }
+    .fixed-actionbar, .topbar, .wb-nav, .chat-toggle-btn, .chat-panel, .note-banner, .caratula .progress-box{ display:none !important; }
     body{ background:#fff; }
   }
 
@@ -370,10 +392,9 @@
     <div class="login-card">
       <div class="eyebrow">CETIS 61 · Acceso a docentes</div>
       <h2>Instrumentos de Evaluación</h2>
-      <label for="tEmail">Correo institucional</label>
-      <input type="email" id="tEmail" autocomplete="off" placeholder="docente@cetis61.edu.mx">
-      <label for="tPass">Contraseña</label>
-      <input type="password" id="tPass">
+      <p class="hint" id="tLoginHint" style="margin-top:0;">Ingresa tu PIN de acceso docente.</p>
+      <label for="tPin">PIN</label>
+      <input type="password" id="tPin" autocomplete="off">
       <div class="error-msg" id="tLoginError"></div>
       <button class="btn-dark" onclick="teacherLogin()">Iniciar Sesión</button>
       <button class="back-link" onclick="showScreen('screen-role')">← Volver</button>
@@ -413,6 +434,7 @@
     </div>
   </div>
   <div class="wrap" style="padding-top:20px;">
+    <div class="practice-banner">📝 Este es tu espacio de práctica con ayuda de Claude. Aquí puedes resolver dudas antes de responder. Tu entrega oficial se registra en la página de tu escuela.</div>
     <div class="note-banner">Este cuaderno guarda tus respuestas automáticamente. Tu docente podrá ver tu avance y tus respuestas.</div>
     <div class="progress-shell"><div class="progress-fill" id="progressFill"></div></div>
     <div class="wb-nav" id="wbNav">
@@ -460,18 +482,53 @@
 <div class="screen" id="screen-teacher-dashboard">
   <div class="wrap">
     <div class="wb-header">
-      <div class="who">Panel docente — <b id="tdName">—</b>
-        <span id="captureStatusPill" class="pill" style="margin-left:10px;">Verificando estado…</span>
-      </div>
+      <div class="who">Panel docente</div>
       <button class="linkbtn" onclick="logout()">Cerrar sesión</button>
     </div>
-    <div class="note-banner">Los datos se leen y guardan en tu hoja de Google Sheets. El listado de estudiantes se administra directamente ahí, no desde esta app. El candado de captura (Abierto/Cerrado) se controla desde la hoja "Configuracion".</div>
-    <table>
-      <thead><tr><th>Estudiante</th><th>Grupo</th><th>Progreso general</th><th>Última actividad</th></tr></thead>
-      <tbody id="progressTableBody"></tbody>
-    </table>
-    <div class="empty-state" id="progressEmpty" style="display:none;">Todavía no hay avance registrado. Verifica que el correo de tus estudiantes en la hoja "Estudiantes" coincida con el que usan para entrar.</div>
-    <div class="detail-panel" id="detailPanel"></div>
+    <div class="note-banner">Los datos de este cuaderno se guardan de forma compartida para que puedas consultarlos; no están cifrados, úsalo solo para fines de clase.</div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="roster" onclick="switchTeacherTab('roster')">Estudiantes registrados</button>
+      <button class="tab-btn" data-tab="progress" onclick="switchTeacherTab('progress')">Progreso y calificaciones</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-roster">
+      <div class="add-student-form">
+        <div>
+          <label>Nombre completo</label>
+          <input type="text" id="newStuName">
+        </div>
+        <div>
+          <label>Grupo</label>
+          <input type="text" id="newStuGroup" placeholder="ej. 3ºA">
+        </div>
+        <div>
+          <label>Correo</label>
+          <input type="email" id="newStuEmail">
+        </div>
+        <div>
+          <label>Contraseña</label>
+          <input type="text" id="newStuPass">
+        </div>
+        <div class="full">
+          <button class="btn btn-primary" onclick="addStudent()">Agregar estudiante</button>
+          <span class="error-msg" id="addStuError"></span>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Grupo</th><th>Correo</th><th></th></tr></thead>
+        <tbody id="rosterTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="rosterEmpty" style="display:none;">Aún no registras estudiantes. Agrega el primero arriba.</div>
+    </div>
+
+    <div class="tab-panel" id="tab-progress">
+      <table>
+        <thead><tr><th>Estudiante</th><th>Grupo</th><th>Progreso general</th><th>Última actividad</th></tr></thead>
+        <tbody id="progressTableBody"></tbody>
+      </table>
+      <div class="empty-state" id="progressEmpty" style="display:none;">Todavía no hay avance registrado.</div>
+      <div class="detail-panel" id="detailPanel"></div>
+    </div>
   </div>
 </div>
 
@@ -485,76 +542,29 @@ const IMG_QR_MATEFISICA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA1YAAAN
 const IMG_QR_T13_IDENTIFICO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAAC2UlEQVR4nO1by24jMQwjF/P/v8w9kLLdwx4KTFBp6yYoJhMeCEWgqcdQ+Mbfn++AL/qifxwNVYILAiQJgtY79wPtw3sq+gEcT/qC8mu9SW1EH95T0Q8A0BElBEAEHX4Agngg+vCein72pUDKyUw6zjz05tNMfgf6iDclp7VTOuICHgHvw3s0WtpCAoEQRIKCkuhGdOM9EP3Vn/zrVdA+vKeiH+xwWrFLTHJIijvgjXhPRT8AVW4EFLEVWwQoA0RAjXhPRTOZXKejs5qChVuJeFK8D+/RaEokhJXoihUHnf3lXJrxnolmlTMkRK6v6B+ABEiLTiveI9EPotrRkpSTOirO6MynmfwatMSlH6KbVATtVOiQJ+1b8R6JfqpVkiNR+wSlZSbW5ONMfhHauV0HpgtLbWMOiSTVjvdAtN0esDO7LDcIWbr3/T68B6MdThGyTMuOBEvHsT624j0WTelsA7qqlHXb/sSHZjfeE9HVP1F58Kh4wm0PnrqnE++p6DRPqn5PdG1Rlk9cIt6H91R0elGq69Q5u3fCyvpPM/kd6PIeqNGCtumu67roxHsqumY7Xoaoe2v6oCXvuvOGN9DLlsSEcwk4t6Csm314T0VnXryC6qZJOXK3ancfqw/vqejK5DoRa+SQXngsSjS9Ee+paGR/TceeSWl3ZsWZX0pXv19BywMFCqiVwdTw56z4zhteQR8LPcQubw4frqj69YNvobMwaCtSE0zVjCF9lJvf76IzFl6t8HLhcsOQ15+8gj6WT6pHtTxKFfXr+0a8p6KP/Sqmemc5wYr9nhn34T0VveaX8SUREm9BVPZTiX8f3pPR5b69v0ZlKO9l+/wAvP7kFfT5fANqliYmvvUfue7Deyr62LePbGQ+jy+HZz724f0foFXP7UhcGZ/R8d33eRNdzZNU9BXrdL9199neQz9YBqX2BIWd6PYsqhqoD++p6PNpqJ9lctEX/T76L8OTqoZR3NaWAAAAAElFTkSuQmCC";
 const IMG_QR_T13_RELACION = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAAC10lEQVR4nO2by24cMQwEuwP9/y9XDnyM5pCDETmWsrKNxcxuHQiu3GqSGqMv/Pz6CnzpS/84LWqBIwmQIP+E6iXRfeI+lR6KTMsSMsYGC4OMJfMQ+8R9Kj2kzLVkcOQYGckIWROxT9yn0uO5xBayMbJkdZr/SSSfQU/5NplkXHcYzxnfJ+6jaUASlhUSEq9GGNzEbnEfSM/+5M+/he4T96n0eBQ6EovjWqne+En4RnGfSg/JZUKwcHqTvC+fkq5ln7hPpY3Ke4vKfTiUSHFuo3x7JJ9DWyDHnhnvpivJTVMm/wX2ivtE2lNxqZekxHpvELNT3KfSo8TCKdcOX/iot/pLufr993Sqc4p31Ja55InCJ1c5N98r6NHZLCdeJWaWP2VNvj2SD6JbrGvLrI5sphpsX/1eRdcO+ZQ7khSdq7wFuP3YBfSQIsml1d0GTxXv3VR3fS+gU7XjBQSgmu70hKc+2yfuU+mhUu5ueZMtlFYZV92zUdwH03b2u7uMTDuCJXuqNveK+0j6qWhqrlOGPF1L6vftn6yhxUum+71W9dZ3uPq9hq4FnIchVCUQLTDEdHOzuE+kR7nB3CvbE/aY3uXJr34voEM7KC+oPOFDSUppSzD7xH0wHWXl034lLMvcrKoNc6u4j6Tr3BrTuGFa8a999K7vJTQYy043QsyIs3+i2kNvPb+Ezn53j4njgE/1UuYO+K0vV9GOWj48SmUbOyt8Odon1w8uoPM8W8x1/Crq4wPpGQBtFPepdE11JvP3NAnVB9ny033iPpU206WnaUNOMkvfuf3BJfToMw/VE8wvIJQ7tkpzz0MsoufnG9w6Pp37kfKU1V3fK+j5+YY8UkVP5OmHGxSWcZ+4T6XHfBPy4ceJV3kZgrJT3P8B3dIdTjwHEVb48Ht+cB1dps+p0253mKdPypJvFveB9FAbFL+kI4rMGF5Wm3ajuE+lJ//9w5Fc+tLr6d/nENE2sF9oTgAAAABJRU5ErkJggg==";
 const IMG_QR_T14_MINIRETO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAAC00lEQVR4nO2bzW4jMQyDycW8/ytzD6JkZ29FvamUukDTmeQ7EBpV1l8ofOHnz1fgS1/6x2koHVzYXV3+fSHUR/dU+oHtSoAQAUAMCxNiXCfRR/domiQAQVS8kmFjCuAiuukeSD/rMmxMUIAo3wpccaaP7qn0Zm/5lQCoNDn3sN5H91T6AepgtGNvN/9cNdI9lX7gCA0wT0cwzk1QFMQiGumeSm/Bmai4TYEQ/Oc9Sn4NTZAgKdjmy86EE8WAeukeSUOKUieqGgmSix35LjDceucULYIihHLrrG+AfCAA1E33WFpOsgmAtNmrjHctpHco+Xi6Kkggcu9IuDNDcYKY1U8f3YNprlBNrEiiFUkgSLrn5QH6ifCdaUgWPQAQ1neKEmVnH91TaWrLuyEfnHg5OP0m1Uj3YDptKoB0QF+uHY/h+vchulI/0b0T2rZh8fDyrEL76B5M093AcGJGcigofBvRGL/973O0OyaO5HmfBRDdEr/znRO0s+tl67095bDCNH8j3YPpCM/K2Q4ZpySjm+KoEk+kle6R9NaTirJHNR/2B8rJvW6/6vv0k9WNan4Jz9EyR3R6ePPBE/S+D7GNGZCPgXJG+N+V/A66Uu51UlYirvL1PE776J5Ni2Tmfj45owLKBSD/E3TTPZPOFapKBRl2VvVS8jH00j2UZhg4hpSO2m4Z5lwHt945R6saUrasu7Hp1uH+t945RdO+DVS8jkpHDuj1cS/dU+ltTrws6zNSa5HzxpMTNCQX81558JvxQdWWCKfvo3sqve9XrWFOpt2VmLsS6qN7Kv2sAFJT+NgjZLUNK2FspHsqvdfza+E7yp243DeS++ieSm/ra7XVptxxqx5huP2N39+n93XB9V4Z3+ZP0/fR/RF02pUghXiR6K87vFPJZ9PpwMxUO1atcpGNmYZ30z2Qfv1+Q64TxrCBWebc75Mco1/mwz+q5NKXPk//BZjrpnEiuvQ/AAAAAElFTkSuQmCC";
+const IMG_QR_T15_TABLA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAAC1ElEQVR4nO2bwW4jMQxDyYX//5e5B1Ia72L3UNRp7cZpgUySdyA0gkJJDoUPPH59BL70pb+dhirB5ReCAEkS8o8mtI/uU2kKlC8oAoCAegYo4iE20n00TRIAKEEiIEeb6OQOsZnus2mBSXEKEOkw69/0K5W8B01IFECIICRRkIvL1yr5wfQAUqqd0X4SRYiC6Hug1yt5D3r2J///K3Qf3afSA084XTkmcwLIWf4VSt6DHraEAACBLuCJr+hrCrRt2Uf3qXTnt0CwktxRJijlI1P76D6YJiiJdGAdYdtAgQm9QL5eyRvQkASkcc87aeT9UXP3+3IFXfU7CV0ND1K94cJScd9H98k0qZSRnqcItD+JGU+fuZfuE+nhp0xNksjlWNiBv/3OIvrxfx4FJsaJe5cTAtBOuk+lBwCV/UMMoB+JtoCMC6///jzdhVu9WlB38eXMVSuIfXSfSqPzV481TNzx3A2/eeP9abr6S/fy1bmXMxSlMozXn6ygR8x2D6dittuBq6J+vy9X0Pbb9PpMcX723JrcC+/8ZA2NLtZ/Vu12JXMFv/V7EZ2mssaAKTGinnXaze9VtJM3I3AyTlBpfNwFCSA3030kPTJtfWoJquGsBohV0HfSfThddSN9O0mHW/AaIrdgO91H0plI+UwPq3ZDyp5eOfyzm+5TaU+++TgTe3ByPoBy83sZXXVatbVM++OgAykrt99ZQFP+Mkxb89cctlr7QvfRfTjNzEiIadOA2m6SuOc119DPfNDFW91sTu1lo/voPpWmpkufGowTnE6G9854H92n0pkPordoTPOTmHMaEu6k+1R6YD4smKj31ETsDkg3v1fQA+hYU6idcU/Bc8wt1/voPpUe8wsKOdeGPqJZd+LOT1bTvddxl6O68g9Lbn+5jq6DgrGGdZTQ6+P+lclXKPnx9EAbFNau2A0+EnB23HfSfSo9+e9vVnLpS6+nfwMj8sxCyOLH1QAAAABJRU5ErkJggg==";
+const IMG_QR_T16_PRECISION = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAFoAQAAAABSnlx4AAACx0lEQVR4nO1by27DMAwjh/z/L3MHUZI77DLAWe3GA9p6LQ+EINDUIxT+8Pf1F/BBH/Tb0VAmuABBijeM39ZZ6/DeFX3BsWV9JUqECFEkNCDW4b0r+gIARh5HyCPUoEhQIFWIhXh/AJqi0PlMAAIl/oq+k8kHo68+Dk6FEBx9jt+vw3tX9AVUpAmLSqV06HZfn+vw3hV9oa5KiqDy5E9B7Mt0Hd67oqnhSGd2Cnnp+X8weQyaIEFSDLM9xJnxokFr8d4SDUlR1ESV45Knj07v+Hcd3ruiL4R8+LK0XMuJDQB2KaBW4r0xmgRBQRgOndlgFPmnvpyBhloxrC2S9CIjCIU5ejIBHdX6y1vU7kO1WS5xId47o8OgAHCgbQFFCiAJ0B58Ld47ooeERhXvHfvMdLvxdXjvjC7NoCKd3QknJDLyXSe/p6BdX1YTNqtMt79bym9n8gw0s5osDYlKviUmFeb0v2egUWVlD85sCF141q/HD85BRywrv6Xol7h/wvKGp76cgM4eSfVP3OzO/O5Z8al3ZqBLNdCfdiwu6Qc5OfGegXaYw2SnB/ctKYlg9FPuZ/IMdKg102TLHjEUnaE0Yb/X4r0luv13HWW/HfabNe459eUE9DhTyDnDcH+6k5J+cR3ee6NHNyLm0olay0+9MxHNNNxkNQVT1YEK9vHfc9B2hIzNNae2Z8XKeYTOfTkLzWpvw7ke2kJbQef6PzB5Bjo2ILK6pMDcsXKZr5ooL8V7S3TtV/1YFRwmDZniNzN5Bnrcr4KXH+qVUUduAK3De1f0NeyZALVEyBxkMldPjh+cgn59vkFdXtodZlvlfibPQP98vkFtVERP0lLfV+K9K3rYt2eP0VpKci/lzOfno5mqbUvIrO9za2JR3tuh1YOFuCq9DOEeISHy1PNT0K/PN/ixtFiP1aDeZx9iEnrw329mctAHPR/9DRRcykvvVlyRAAAAAElFTkSuQmCC";
+const IMG_QR_T17_GRAFICA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYgAAAGIAQAAAABzOEqLAAADSElEQVR4nO1cy5LjQAiTtvz/v6w9IKBnb3Nob6fDzFT5EavGpAMCgUPhlz9/fgsYxCA+FvEAjD2BIgRCoAAKAIg4qbrqTDtuQTwA/MZD9EYAGMsjQATVV51px1UIkgDi3Y+3n5BAgGD6j6862Y7LEPSKxEH7hiqm/Y+7+i7Esx5kgCq3MGtwvehMO25BPICpITaEAKoIXSD9ut67q+9FPFg+/lTlUZViUfFbV51pxy0Idj1IIJIrAijOyDT41bv6XgSrtnC0sj8AQSe1FHXNmXbcgnCtEdSdJUaUIEwnUe9OPbgZAQmCpNyDEIfwucqB45zOtOMWRORXVBMGxfCHVE5MJ+DEq/0IWqwCRDG1Ejlo0aEKJWdNvNqLiHzXIUkM1yguCf1E4RpemTPtuAWxcgW8A8nb2gteGf7Yjoh8VxmNHK7QAjvgUAYMf+xHsMXCKDdCs/pHOkFGrMl330BIgsSOWUke9F8qv+MfuxGh71JixCgRdoog9m4SZt57ph13IdozojFlaTc7Un45SpGT7fh8xMIfVf2pTxTF+/Clu/pehPsfvSyirCLG4rAEXkbAOtOOixAEk7djBVihSirmYEa1Y+24AvEsuW0qVFWamz8WrXf0ks0IlmTYkns3A7U2SDB6yX7EA4AWQ6jwBjWT2CeW3u2hdtyC8Dyc206Z7wbBK4vyJHRw+GMzIgVEqTtR6pdkEm9dcfTErYinScJ+0fmtQ1b20B2+zrTjFsQDtMi71hxwp7D9JYLYoXZchAg9JFhbVg6zdYsUUCAOf7yEsBiSFSAoSDm9mwUhV8Qbd/WdiBRKlkGrZeBKWSIuGteZdtyEyOTKYglBkgtxuKmuqQf3I5jTI2uK1R2Qag522/BMO25BVDMwR0y6EVibGm2Apv7YjMhK78c6LGujblZ5QPFMO25BrPPtnp/O3tMydFX14Ut39b2I5flaIeWRKAZ/zFFHLTL1x27E8nwtgWXuKvMtlLA4/Y8XEKGXZA+qn2u2i4SIleWgZp7hVQSRBYhZ3t8PkA8ijH61HfHz+VpQ4RrZm8qHnSkMf7y2HpXOZmpVxZ+yMgz9d/xjN6K/AWCdZKiBUZeCfk5KM9++G7HUH9v+xyAG8amIvzdn+aFR0vSVAAAAAElFTkSuQmCC";
 
-/* ============================= CONFIGURACIÓN DE GOOGLE SHEETS ============================= */
-// TODO: Pega aquí mañana la URL de tu Apps Script (termina en /exec)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5Nlt2vOUL7tD7K2gd-WqJ2TK3IQM4rAvHrQPv1pnYpcBQq70PF-3pBa3Tw6F4oVSf/exec";
-
-async function callAppsScript(action, payload){
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('PEGA_AQUI') !== -1){
-    return { ok:false, error:'La app todavía no está conectada a Google Sheets. Configura APPS_SCRIPT_URL en el código.' };
-  }
-  try{
-    const res = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS con Apps Script
-      body: JSON.stringify({ action, ...payload })
-    });
-    return await res.json();
-  }catch(err){
-    console.error('Apps Script error', err);
-    return { ok:false, error:'No se pudo conectar con Google Sheets. Revisa tu conexión e intenta de nuevo.' };
-  }
+/* ============================= STORAGE HELPERS (nativo de Claude) ============================= */
+async function storageGet(key, shared){
+  try{ const r = await window.storage.get(key, shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function storageSet(key, value, shared){
+  try{ await window.storage.set(key, JSON.stringify(value), shared); return true; }
+  catch(e){ console.error('Storage error', e); return false; }
 }
 
-async function getProgress(email){
-  const r = await callAppsScript('getProgress', { email });
-  return (r && r.ok && r.data) ? r.data : { diag:{}, t11:{}, meta:{} };
-}
-async function saveProgress(email, data){
-  const r = await callAppsScript('saveProgress', { email, data });
-  return r || { ok:false };
-}
-
-/* ============================= CANDADO DE FECHAS (ABIERTO/CERRADO) ============================= */
-function handleSaveResult(res){
-  if(res && res.ok){ toast('Guardado ✓'); return; }
-  if(res && res.closed){ showCaptureClosedBanner(res.error); return; }
-  toast('No se pudo guardar, intenta de nuevo');
-}
-
-function showCaptureClosedBanner(msg){
-  let banner = document.getElementById('captureClosedBanner');
-  if(!banner){
-    banner = document.createElement('div');
-    banner.id = 'captureClosedBanner';
-    banner.className = 'note-banner';
-    banner.style.background = '#FBEAEA';
-    banner.style.borderColor = 'var(--red)';
-    banner.style.color = '#7a1f1f';
-    const wrap = document.querySelector('#screen-student-workbook .wrap');
-    if(wrap) wrap.insertBefore(banner, wrap.firstChild);
-  }
-  banner.textContent = '🔒 ' + (msg || 'El periodo de captura está cerrado.');
-  disableAllWorkbookInputs();
-}
-
-function disableAllWorkbookInputs(){
-  document.querySelectorAll('#workbookContent input, #workbookContent textarea, #workbookContent .btn-submit-section').forEach(el=>{
-    el.disabled = true;
-  });
-}
-
-async function checkCaptureStatus(){
-  const r = await callAppsScript('getConfig', {});
-  if(r && r.ok && r.open === false){
-    showCaptureClosedBanner('El periodo de captura está cerrado. Puedes ver tus respuestas guardadas, pero no se aceptarán cambios nuevos.');
-  }
-}
+async function getRoster(){ return (await storageGet('roster', true)) || []; }
+async function saveRoster(list){ return storageSet('roster', list, true); }
+async function getProgress(email){ return (await storageGet('progress:'+email, true)) || { diag:{}, t11:{}, meta:{} }; }
+async function saveProgress(email, data){ return storageSet('progress:'+email, data, true); }
+async function getPin(){ return await storageGet('docentePIN', true); }
+async function setPin(pin){ return storageSet('docentePIN', pin, true); }
 
 /* ============================= APP STATE ============================= */
 let currentStudent = null; // {name, group, email}
-let currentTeacher = null; // {name, email}
 let currentProgress = null;
 
 function showScreen(id){
@@ -565,11 +575,9 @@ function showScreen(id){
 document.getElementById('btnHome').onclick = ()=>{ logout(); };
 
 function logout(){
-  currentStudent = null; currentTeacher = null; currentProgress = null;
+  currentStudent = null; currentProgress = null;
   document.getElementById('sEmail').value=''; document.getElementById('sPass').value='';
-  document.getElementById('tEmail').value=''; document.getElementById('tPass').value='';
-  const banner = document.getElementById('captureClosedBanner');
-  if(banner) banner.remove();
+  document.getElementById('tPin').value='';
   showScreen('screen-role');
 }
 
@@ -595,44 +603,94 @@ async function studentLogin(){
   const errEl = document.getElementById('sLoginError');
   errEl.textContent = '';
   if(!email || !pass){ errEl.textContent = 'Escribe tu correo y tu contraseña.'; return; }
-  const r = await callAppsScript('login', { role:'estudiante', email, password: pass });
-  if(!r || !r.ok){ errEl.textContent = (r && r.error) || 'Correo o contraseña incorrectos.'; return; }
-  currentStudent = { name: r.name, group: r.group, email: normalize(email) };
+  const roster = await getRoster();
+  const match = roster.find(s => normalize(s.email)===normalize(email) && s.password===pass);
+  if(!match){ errEl.textContent = 'No encontramos ese correo y contraseña. Pide a tu docente que verifique tu registro.'; return; }
+  currentStudent = { name: match.name, group: match.group, email: normalize(match.email) };
   currentProgress = await getProgress(currentStudent.email);
   document.getElementById('wbName').textContent = currentStudent.name;
   document.getElementById('wbGroup').textContent = currentStudent.group || '—';
   renderWorkbook();
   showScreen('screen-student-workbook');
-  checkCaptureStatus();
 }
 
-/* ============================= TEACHER LOGIN ============================= */
+/* ============================= TEACHER LOGIN (PIN local) ============================= */
 async function teacherLogin(){
-  const email = document.getElementById('tEmail').value.trim();
-  const pass = document.getElementById('tPass').value;
+  const pin = document.getElementById('tPin').value.trim();
   const errEl = document.getElementById('tLoginError');
   errEl.textContent = '';
-  if(!email || !pass){ errEl.textContent = 'Escribe tu correo y tu contraseña.'; return; }
-  const r = await callAppsScript('login', { role:'docente', email, password: pass });
-  if(!r || !r.ok){ errEl.textContent = (r && r.error) || 'Correo o contraseña incorrectos.'; return; }
-  currentTeacher = { name: r.name, email: normalize(email) };
-  document.getElementById('tdName').textContent = currentTeacher.name;
+  if(!pin){ errEl.textContent = 'Escribe un PIN.'; return; }
+  const savedPin = await getPin();
+  if(savedPin === null){
+    await setPin(pin);
+    await enterTeacherDashboard();
+    return;
+  }
+  if(pin !== savedPin){ errEl.textContent = 'PIN incorrecto.'; return; }
+  await enterTeacherDashboard();
+}
+async function enterTeacherDashboard(){
   showScreen('screen-teacher-dashboard');
+  await renderRosterTable();
   await renderProgressTable();
-  await renderCaptureStatusPill();
+}
+async function updateTeacherLoginHint(){
+  const savedPin = await getPin();
+  const hintEl = document.getElementById('tLoginHint');
+  if(!hintEl) return;
+  hintEl.textContent = savedPin===null
+    ? 'Primera vez: crea un PIN de acceso docente (guárdalo, lo pedirás cada vez que entres).'
+    : 'Ingresa tu PIN de acceso docente.';
+}
+document.querySelectorAll('.dark-role-card.doc').forEach(el=>el.addEventListener('click', updateTeacherLoginHint));
+
+/* ============================= TEACHER: ROSTER MGMT ============================= */
+async function addStudent(){
+  const name = document.getElementById('newStuName').value.trim();
+  const group = document.getElementById('newStuGroup').value.trim();
+  const email = document.getElementById('newStuEmail').value.trim().toLowerCase();
+  const pass = document.getElementById('newStuPass').value;
+  const errEl = document.getElementById('addStuError');
+  errEl.textContent = '';
+  if(!name || !email || !pass){ errEl.textContent = 'Nombre, correo y contraseña son obligatorios.'; return; }
+  const roster = await getRoster();
+  if(roster.some(s=>s.email===email)){ errEl.textContent = 'Ya existe un estudiante con ese correo.'; return; }
+  roster.push({name, group, email, password:pass});
+  await saveRoster(roster);
+  document.getElementById('newStuName').value='';
+  document.getElementById('newStuGroup').value='';
+  document.getElementById('newStuEmail').value='';
+  document.getElementById('newStuPass').value='';
+  await renderRosterTable();
+  await renderProgressTable();
+  toast('Estudiante agregado ✓');
+}
+async function removeStudent(email){
+  if(!confirm('¿Eliminar a este estudiante de la lista? Sus respuestas guardadas no se verán, pero no se borrarán.')) return;
+  let roster = await getRoster();
+  roster = roster.filter(s=>s.email!==email);
+  await saveRoster(roster);
+  await renderRosterTable();
+  await renderProgressTable();
+}
+async function renderRosterTable(){
+  const roster = await getRoster();
+  const body = document.getElementById('rosterTableBody');
+  body.innerHTML = '';
+  document.getElementById('rosterEmpty').style.display = roster.length ? 'none' : 'block';
+  roster.forEach(s=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.group||'—')}</td><td>${escapeHtml(s.email)}</td>
+      <td><button class="linkbtn" style="color:var(--red)" onclick="removeStudent('${s.email}')">Eliminar</button></td>`;
+    body.appendChild(tr);
+  });
 }
 
-async function renderCaptureStatusPill(){
-  const pill = document.getElementById('captureStatusPill');
-  if(!pill) return;
-  const r = await callAppsScript('getConfig', {});
-  if(r && r.ok){
-    pill.textContent = r.open ? 'Captura: Abierta ✅' : 'Captura: Cerrada 🔒';
-    pill.className = 'pill ' + (r.open ? 'pill-ok' : 'pill-low');
-  } else {
-    pill.textContent = 'Estado no disponible';
-    pill.className = 'pill pill-mid';
-  }
+/* ============================= TEACHER: PROGRESS TABLE ============================= */
+function switchTeacherTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
 }
 
 function pct(obj, total){
@@ -646,18 +704,16 @@ function pillFor(percent){
 }
 
 async function renderProgressTable(){
+  const roster = await getRoster();
   const body = document.getElementById('progressTableBody');
   body.innerHTML = '';
+  document.getElementById('progressEmpty').style.display = roster.length ? 'none' : 'block';
   document.getElementById('detailPanel').classList.remove('open');
 
-  const r = await callAppsScript('getDashboard', {});
-  const students = (r && r.ok && r.students) ? r.students : [];
-  document.getElementById('progressEmpty').style.display = students.length ? 'none' : 'block';
-
-  for(const s of students){
-    const prog = s.progress || {};
+  for(const s of roster){
+    const prog = await getProgress(s.email);
     const overallPct = computeOverallProgress(prog);
-    const last = s.updated ? new Date(s.updated).toLocaleString() : '—';
+    const last = prog.meta && prog.meta.lastUpdated ? new Date(prog.meta.lastUpdated).toLocaleString() : '—';
     const tr = document.createElement('tr');
     tr.className = 'student-row';
     tr.innerHTML = `<td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.group||'—')}</td>
@@ -876,16 +932,20 @@ function fichaHtml(letter){
     </div>
     <div class="question"><div class="qtext">1. Despeja x: 4x = 24</div>
       <input type="text" data-section="repaso" data-id="a1" data-type="numeric" data-correct="6" placeholder="x = ">
-      <div class="feedback" id="fb-repaso-a1"></div></div>
+      <div class="feedback" id="fb-repaso-a1"></div>
+      ${chatWidgetHtml('repA-a1', 'Despeja x: 4x = 24', 'Ficha A · Aritmética y álgebra')}</div>
     <div class="question"><div class="qtext">2. Despeja x: x/3 = 6</div>
       <input type="text" data-section="repaso" data-id="a2" data-type="numeric" data-correct="18" placeholder="x = ">
-      <div class="feedback" id="fb-repaso-a2"></div></div>
+      <div class="feedback" id="fb-repaso-a2"></div>
+      ${chatWidgetHtml('repA-a2', 'Despeja x: x/3 = 6', 'Ficha A · Aritmética y álgebra')}</div>
     <div class="question"><div class="qtext">3. Calcula: 0.25 × 40 =</div>
       <input type="text" data-section="repaso" data-id="a3" data-type="numeric" data-correct="10">
-      <div class="feedback" id="fb-repaso-a3"></div></div>
+      <div class="feedback" id="fb-repaso-a3"></div>
+      ${chatWidgetHtml('repA-a3', 'Calcula: 0.25 × 40', 'Ficha A · Aritmética y álgebra')}</div>
     <div class="question"><div class="qtext">4. Convierte: 1.5 kg = ___ g</div>
       <input type="text" data-section="repaso" data-id="a4" data-type="numeric" data-correct="1500">
-      <div class="feedback" id="fb-repaso-a4"></div></div>`;
+      <div class="feedback" id="fb-repaso-a4"></div>
+      ${chatWidgetHtml('repA-a4', 'Convierte: 1.5 kg a gramos', 'Ficha A · Aritmética y álgebra')}</div>`;
   }
   if(letter==='B'){
     return `
@@ -897,11 +957,11 @@ function fichaHtml(letter){
       <label style="display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--gray);">
         <input type="checkbox" data-section="repaso" data-id="b1" data-type="checkbox" style="width:auto;"> Ya ubiqué los dos puntos
       </label>
-      </div>
+      ${chatWidgetHtml('repB-b1', 'Ubica en el plano los puntos (2,3) y (4,7)', 'Ficha B · Plano cartesiano')}</div>
     <div class="question"><div class="qtext">2. Si una recta pasa por (0,0) y (4,8), ¿cuál es su pendiente?</div>
       <input type="text" data-section="repaso" data-id="b2" data-type="numeric" data-correct="2">
       <div class="feedback" id="fb-repaso-b2"></div>
-      </div>`;
+      ${chatWidgetHtml('repB-b2', 'Si una recta pasa por (0,0) y (4,8), ¿cuál es su pendiente?', 'Ficha B · Plano cartesiano')}</div>`;
   }
   if(letter==='C'){
     return `
@@ -910,14 +970,16 @@ function fichaHtml(letter){
     </div>
     <div class="question"><div class="qtext">1. Si 4 litros de pintura cubren 20 m², ¿cuántos litros necesito para 35 m²?</div>
       <input type="text" data-section="repaso" data-id="c1" data-type="numeric" data-correct="7" placeholder="L">
-      <div class="feedback" id="fb-repaso-c1"></div></div>
+      <div class="feedback" id="fb-repaso-c1"></div>
+      ${chatWidgetHtml('repC-c1', 'Si 4 litros de pintura cubren 20 m², ¿cuántos litros necesito para 35 m²?', 'Ficha C · Proporcionalidad')}</div>
     <div class="question"><div class="qtext">2. Una planta crece según los días transcurridos. ¿Cuál variable es independiente y cuál dependiente?</div>
       <label class="hint">Independiente</label>
       <input type="text" data-section="repaso" data-id="c2ind" data-type="keywords" data-groups='[["dias","dia"]]'>
       <div class="feedback" id="fb-repaso-c2ind"></div>
       <label class="hint">Dependiente</label>
       <input type="text" data-section="repaso" data-id="c2dep" data-type="keywords" data-groups='[["crecimiento","crece","altura"]]'>
-      <div class="feedback" id="fb-repaso-c2dep"></div></div>`;
+      <div class="feedback" id="fb-repaso-c2dep"></div>
+      ${chatWidgetHtml('repC-c2', 'Una planta crece según los días transcurridos. ¿Cuál variable es independiente y cuál dependiente?', 'Ficha C · Proporcionalidad')}</div>`;
   }
   // D
   return `
@@ -927,10 +989,12 @@ function fichaHtml(letter){
     <p class="hint">Tabla: Tiempo (min): 1, 2, 3 → Agua acumulada (L): 3, 6, 9</p>
     <div class="question"><div class="qtext">1. ¿Cuánta agua se acumula por minuto?</div>
       <input type="text" data-section="repaso" data-id="d1" data-type="numeric" data-correct="3">
-      <div class="feedback" id="fb-repaso-d1"></div></div>
+      <div class="feedback" id="fb-repaso-d1"></div>
+      ${chatWidgetHtml('repD-d1', '¿Cuánta agua se acumula por minuto, según la tabla?', 'Ficha D · Lectura de tablas')}</div>
     <div class="question"><div class="qtext">2. Si el patrón continúa, ¿cuánta agua habrá en el minuto 5?</div>
       <input type="text" data-section="repaso" data-id="d2" data-type="numeric" data-correct="15">
-      <div class="feedback" id="fb-repaso-d2"></div></div>`;
+      <div class="feedback" id="fb-repaso-d2"></div>
+      ${chatWidgetHtml('repD-d2', 'Si el patrón de la tabla continúa, ¿cuánta agua habrá en el minuto 5?', 'Ficha D · Lectura de tablas')}</div>`;
 }
 
 function switchWorkbookSection(target){
@@ -968,6 +1032,119 @@ document.addEventListener('click', (e)=>{
   closeTemasMenu();
 });
 
+/* ============================= CHAT DE APRENDIZAJE GUIADO ============================= */
+// chatStore[qid] = { question, level, apiMessages:[{role,content}], displayMessages:[{role,content}], opened:bool }
+const chatStore = {};
+
+function chatWidgetHtml(qid, questionText, level){
+  return `
+  <button class="chat-toggle-btn" id="chatToggle-${qid}" data-qid="${qid}" data-question="${escapeAttr(questionText)}" data-level="${escapeAttr(level)}" onclick="toggleChat(this)">💬 Pregúntale a Claude</button>
+  <div class="chat-panel" id="chatPanel-${qid}">
+    <div class="chat-hint">Puedes escribirle a Claude tus dudas sobre esta pregunta. Te va a guiar con pistas, no te va a dar la respuesta directa.</div>
+    <div class="chat-messages" id="chatMsgs-${qid}"></div>
+    <div class="chat-loading" id="chatLoading-${qid}" style="display:none;">Claude está pensando...</div>
+    <div class="chat-error" id="chatError-${qid}" style="display:none;"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput-${qid}" placeholder="Escribe tu duda..." onkeydown="if(event.key==='Enter'){event.preventDefault(); sendChatMessage('${qid}');}">
+      <button id="chatSend-${qid}" onclick="sendChatMessage('${qid}')">Enviar</button>
+    </div>
+  </div>`;
+}
+
+function escapeAttr(str){
+  return (str||'').toString()
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleChat(btnEl){
+  const qid = btnEl.dataset.qid;
+  const questionText = btnEl.dataset.question;
+  const level = btnEl.dataset.level;
+  const panel = document.getElementById('chatPanel-'+qid);
+  const willOpen = !panel.classList.contains('open');
+  panel.classList.toggle('open', willOpen);
+  btnEl.classList.toggle('open', willOpen);
+  if(willOpen && !chatStore[qid]){
+    chatStore[qid] = {
+      question: questionText, level: level,
+      apiMessages: [],
+      displayMessages: [{role:'assistant', content:'Hola 👋 Soy tu tutor para esta pregunta. Cuéntame qué parte te cuesta trabajo, o qué idea ya tienes, y te ayudo a llegar a la respuesta.'}],
+    };
+    renderChatMessages(qid);
+  }
+  if(willOpen){ document.getElementById('chatInput-'+qid).focus(); }
+}
+
+function renderChatMessages(qid){
+  const el = document.getElementById('chatMsgs-'+qid);
+  el.innerHTML = chatStore[qid].displayMessages.map(m=>
+    `<div class="chat-bubble ${m.role}">${escapeHtml(m.content)}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function buildTutorSystemPrompt(question, level){
+  return `Eres un tutor de física y matemáticas para estudiantes de Educación Media Superior (EMS) en México, trabajando bajo el enfoque del MCCEMS (metodología de Retos, escuela multigrado).
+Tu estilo es socrático: guías con preguntas y pistas progresivas. NUNCA des la respuesta final directa, ni resuelvas el problema completo por el estudiante, incluso si te lo pide explícitamente — en ese caso anímalo/a a intentarlo primero y dale una pista un poco más concreta que la anterior.
+Sé breve (máximo 3-4 líneas por respuesta), cálido/a y alentador/a. Responde siempre en español, con lenguaje sencillo apropiado para bachillerato.
+Si el/la estudiante ya muestra la idea correcta en el chat, valida su razonamiento con tus propias palabras y anímalo/a a escribir su respuesta final en el recuadro de arriba (no aquí en el chat).
+
+La pregunta que el/la estudiante está resolviendo ahora (${level}) es:
+"${question}"`;
+}
+
+async function callClaude(systemPrompt, messages){
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: messages
+    })
+  });
+  if(!response.ok){ throw new Error('HTTP '+response.status); }
+  const data = await response.json();
+  const textBlocks = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text);
+  return textBlocks.join('\n').trim();
+}
+
+async function sendChatMessage(qid){
+  const input = document.getElementById('chatInput-'+qid);
+  const text = input.value.trim();
+  if(!text) return;
+  const store = chatStore[qid];
+  const sendBtn = document.getElementById('chatSend-'+qid);
+  const loadingEl = document.getElementById('chatLoading-'+qid);
+  const errorEl = document.getElementById('chatError-'+qid);
+  errorEl.style.display = 'none';
+
+  store.displayMessages.push({role:'user', content:text});
+  store.apiMessages.push({role:'user', content:text});
+  renderChatMessages(qid);
+  input.value = '';
+  input.disabled = true; sendBtn.disabled = true;
+  loadingEl.style.display = 'block';
+
+  try{
+    const systemPrompt = buildTutorSystemPrompt(store.question, store.level);
+    const reply = await callClaude(systemPrompt, store.apiMessages);
+    store.displayMessages.push({role:'assistant', content: reply || 'No pude generar una respuesta, intenta reformular tu pregunta.'});
+    store.apiMessages.push({role:'assistant', content: reply});
+    renderChatMessages(qid);
+  }catch(err){
+    console.error('Chat error', err);
+    errorEl.textContent = 'No pude conectar con Claude en este momento. Intenta de nuevo en unos segundos.';
+    errorEl.style.display = 'block';
+  }finally{
+    loadingEl.style.display = 'none';
+    input.disabled = false; sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
 function renderDiagnostico(){
   return `
   <h2 class="topic-title">Evaluación diagnóstica</h2>
@@ -978,26 +1155,31 @@ function renderDiagnostico(){
     <div class="qtext">1. Si 3x = 12, ¿cuánto vale x?</div>
     <input type="text" data-section="diag" data-id="a1" data-type="numeric" data-correct="4" placeholder="x = ">
     <div class="feedback" id="fb-diag-a1"></div>
+    ${chatWidgetHtml('diag-a1', 'Si 3x = 12, ¿cuánto vale x?', 'Diagnóstico · Parte A')}
   </div>
   <div class="question">
     <div class="qtext">2. Calcula: 0.5 × 8 =</div>
     <input type="text" data-section="diag" data-id="a2" data-type="numeric" data-correct="4">
     <div class="feedback" id="fb-diag-a2"></div>
+    ${chatWidgetHtml('diag-a2', 'Calcula: 0.5 × 8 =', 'Diagnóstico · Parte A')}
   </div>
   <div class="question">
     <div class="qtext">3. Calcula: 24 ÷ 6 =</div>
     <input type="text" data-section="diag" data-id="a3" data-type="numeric" data-correct="4">
     <div class="feedback" id="fb-diag-a3"></div>
+    ${chatWidgetHtml('diag-a3', 'Calcula: 24 ÷ 6 =', 'Diagnóstico · Parte A')}
   </div>
   <div class="question">
     <div class="qtext">4. Convierte: 250 g = ___ kg</div>
     <input type="text" data-section="diag" data-id="a4a" data-type="numeric" data-correct="0.25">
     <div class="feedback" id="fb-diag-a4a"></div>
+    ${chatWidgetHtml('diag-a4a', 'Convierte: 250 g = ___ kg', 'Diagnóstico · Parte A')}
   </div>
   <div class="question">
     <div class="qtext">4. Convierte: 3.2 m = ___ cm</div>
     <input type="text" data-section="diag" data-id="a4b" data-type="numeric" data-correct="320">
     <div class="feedback" id="fb-diag-a4b"></div>
+    ${chatWidgetHtml('diag-a4b', 'Convierte: 3.2 m = ___ cm', 'Diagnóstico · Parte A')}
   </div>
 
   <h3 style="color:var(--navy); font-size:1.05rem; margin-top:26px;">Parte B · Plano cartesiano y gráficas</h3>
@@ -1006,7 +1188,7 @@ function renderDiagnostico(){
     <label style="display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--gray);">
       <input type="checkbox" data-section="diag" data-id="b5" data-type="checkbox" style="width:auto;"> Ya ubiqué los tres puntos en mi cuaderno
     </label>
-    
+    ${chatWidgetHtml('diag-b5', 'Ubica en el plano los puntos (1,2), (2,4) y (3,6).', 'Diagnóstico · Parte B')}
   </div>
   <div class="question">
     <div class="qtext">6. En una gráfica lineal, la pendiente representa:</div>
@@ -1016,6 +1198,7 @@ function renderDiagnostico(){
       <label><input type="radio" name="diag-b6" data-section="diag" data-id="b6" data-type="choice" data-correct="a" value="c"> El área bajo la recta</label>
     </div>
     <div class="feedback" id="fb-diag-b6"></div>
+    ${chatWidgetHtml('diag-b6', 'En una gráfica lineal, ¿qué representa la pendiente?', 'Diagnóstico · Parte B')}
   </div>
 
   <h3 style="color:var(--navy); font-size:1.05rem; margin-top:26px;">Parte C · Proporcionalidad y variables</h3>
@@ -1023,6 +1206,7 @@ function renderDiagnostico(){
     <div class="qtext">7. Si 2 kg de manzanas cuestan $40, ¿cuánto cuestan 5 kg?</div>
     <input type="text" data-section="diag" data-id="c7" data-type="numeric" data-correct="100" placeholder="$">
     <div class="feedback" id="fb-diag-c7"></div>
+    ${chatWidgetHtml('diag-c7', 'Si 2 kg de manzanas cuestan $40, ¿cuánto cuestan 5 kg?', 'Diagnóstico · Parte C')}
   </div>
   <div class="question">
     <div class="qtext">8. Mides cómo cambia la temperatura del agua conforme pasa el tiempo. ¿Cuál es la variable independiente y cuál la dependiente?</div>
@@ -1032,6 +1216,7 @@ function renderDiagnostico(){
     <label class="hint">Variable dependiente</label>
     <input type="text" data-section="diag" data-id="c8dep" data-type="keywords" data-groups='[["temperatura"]]'>
     <div class="feedback" id="fb-diag-c8dep"></div>
+    ${chatWidgetHtml('diag-c8', 'Mides cómo cambia la temperatura del agua conforme pasa el tiempo. ¿Cuál es la variable independiente y cuál la dependiente?', 'Diagnóstico · Parte C')}
   </div>
 
   <h3 style="color:var(--navy); font-size:1.05rem; margin-top:26px;">Parte D · Lectura de tablas de datos</h3>
@@ -1040,12 +1225,13 @@ function renderDiagnostico(){
     <div class="qtext">9. ¿Qué pasa con la fuerza cuando la masa se duplica (de 20 g a 40 g)?</div>
     <textarea data-section="diag" data-id="d9" data-type="keywords" data-groups='[["duplica","dobla","doble"],["proporcional"]]'></textarea>
     <div class="feedback" id="fb-diag-d9"></div>
-    
+    ${chatWidgetHtml('diag-d9', '¿Qué pasa con la fuerza cuando la masa se duplica (de 20 g a 40 g)?', 'Diagnóstico · Parte D')}
   </div>
   <div class="question">
     <div class="qtext">10. ¿Cuál de las dos columnas representa la variable independiente?</div>
     <input type="text" data-section="diag" data-id="d10" data-type="keywords" data-groups='[["masa"]]'>
     <div class="feedback" id="fb-diag-d10"></div>
+    ${chatWidgetHtml('diag-d10', 'En la tabla de masa y fuerza, ¿cuál columna es la variable independiente?', 'Diagnóstico · Parte D')}
   </div>
   `;
 }
@@ -1075,6 +1261,7 @@ function renderTema11(){
       data-groups='[["predecir","prediccion"],["describir","explicar"],["exacta","exactitud","precisa"],["calcular","calculo","ecuacion","modelo"]]'
       data-minlength="8" placeholder="Escribe tu respuesta..."></textarea>
     <div class="feedback" id="fb-t11-n1"></div>
+    ${chatWidgetHtml('n1', '¿Qué relación hay entre las matemáticas y la física?', 'Nivel 1 · Exploro')}
   </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Identifica fenómenos que se pueden modelar matemáticamente</span></div></div>
@@ -1082,41 +1269,52 @@ function renderTema11(){
     <div class="qtext">1. Un balón de básquetbol rebota cada vez a menor altura. ¿Qué variables se relacionan?</div>
     <input type="text" data-section="t11" data-id="n2_1" data-type="keywords" data-groups='[["altura"],["rebote","rebota"]]'>
     <div class="feedback" id="fb-t11-n2_1"></div>
+    ${chatWidgetHtml('n2_1', 'Un balón de básquetbol rebota cada vez a menor altura. ¿Qué variables se relacionan?', 'Nivel 2 · Practico')}
   </div>
   <div class="question">
     <div class="qtext">2. Un carro tarda más en frenar mientras más rápido va. ¿Qué variables se relacionan?</div>
     <input type="text" data-section="t11" data-id="n2_2" data-type="keywords" data-groups='[["velocidad","rapidez"],["distancia","tiempo","frenado"]]'>
     <div class="feedback" id="fb-t11-n2_2"></div>
+    ${chatWidgetHtml('n2_2', 'Un carro tarda más en frenar mientras más rápido va. ¿Qué variables se relacionan?', 'Nivel 2 · Practico')}
   </div>
   <div class="question">
     <div class="qtext">3. Un elástico se estira más mientras más se jala. ¿Qué variables se relacionan?</div>
     <input type="text" data-section="t11" data-id="n2_3" data-type="keywords" data-groups='[["fuerza"],["estiramiento","estira","alargamiento"]]'>
     <div class="feedback" id="fb-t11-n2_3"></div>
+    ${chatWidgetHtml('n2_3', 'Un elástico se estira más mientras más se jala. ¿Qué variables se relacionan?', 'Nivel 2 · Practico')}
   </div>
   <div class="question">
     <div class="qtext">4. El sonido de un claxon tarda más en llegar mientras más lejos estás. ¿Qué variables se relacionan?</div>
     <input type="text" data-section="t11" data-id="n2_4" data-type="keywords" data-groups='[["distancia"],["tiempo"]]'>
     <div class="feedback" id="fb-t11-n2_4"></div>
+    ${chatWidgetHtml('n2_4', 'El sonido de un claxon tarda más en llegar mientras más lejos estás. ¿Qué variables se relacionan?', 'Nivel 2 · Practico')}
   </div>
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>De tu vida cotidiana a una ecuación</span></div></div>
   <p class="hint" style="margin:-6px 0 10px;">Estas respuestas son personales: tu docente las revisará directamente, no se marcan como correctas/incorrectas.</p>
   <div class="question"><div class="qtext">Actividad o deporte elegido</div>
-    <input type="text" data-section="t11" data-id="n3_actividad" data-type="open"><div class="feedback" id="fb-t11-n3_actividad"></div></div>
+    <input type="text" data-section="t11" data-id="n3_actividad" data-type="open"><div class="feedback" id="fb-t11-n3_actividad"></div>
+    ${chatWidgetHtml('n3_actividad', '¿Qué actividad o deporte de tu vida diaria involucra claramente una fuerza, distancia, tiempo o velocidad?', 'Nivel 3 · Aplico')}</div>
   <div class="question"><div class="qtext">Momento donde interviene la física</div>
-    <input type="text" data-section="t11" data-id="n3_momento" data-type="open"><div class="feedback" id="fb-t11-n3_momento"></div></div>
+    <input type="text" data-section="t11" data-id="n3_momento" data-type="open"><div class="feedback" id="fb-t11-n3_momento"></div>
+    ${chatWidgetHtml('n3_momento', 'En la actividad que elegiste, ¿en qué momento exacto interviene la física?', 'Nivel 3 · Aplico')}</div>
   <div class="question"><div class="qtext">¿Qué variables cambian?</div>
-    <input type="text" data-section="t11" data-id="n3_variables" data-type="open"><div class="feedback" id="fb-t11-n3_variables"></div></div>
+    <input type="text" data-section="t11" data-id="n3_variables" data-type="open"><div class="feedback" id="fb-t11-n3_variables"></div>
+    ${chatWidgetHtml('n3_variables', 'En tu actividad elegida, ¿qué variables cambian?', 'Nivel 3 · Aplico')}</div>
   <div class="question"><div class="qtext">¿Cómo crees que se relacionan entre sí?</div>
-    <textarea data-section="t11" data-id="n3_relacion" data-type="open"></textarea><div class="feedback" id="fb-t11-n3_relacion"></div></div>
+    <textarea data-section="t11" data-id="n3_relacion" data-type="open"></textarea><div class="feedback" id="fb-t11-n3_relacion"></div>
+    ${chatWidgetHtml('n3_relacion', '¿Cómo crees que se relacionan entre sí las variables que identificaste?', 'Nivel 3 · Aplico')}</div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: propón tu propio fenómeno mecánico</span></div></div>
   <div class="question"><div class="qtext">Fenómeno elegido</div>
-    <input type="text" data-section="t11" data-id="n4_fenomeno" data-type="open"><div class="feedback" id="fb-t11-n4_fenomeno"></div></div>
+    <input type="text" data-section="t11" data-id="n4_fenomeno" data-type="open"><div class="feedback" id="fb-t11-n4_fenomeno"></div>
+    ${chatWidgetHtml('n4_fenomeno', 'Elige un fenómeno mecánico de tu comunidad que quieras investigar.', 'Nivel 4 · Transfiero')}</div>
   <div class="question"><div class="qtext">¿Qué ley física podría explicarlo?</div>
-    <input type="text" data-section="t11" data-id="n4_ley" data-type="open"><div class="feedback" id="fb-t11-n4_ley"></div></div>
+    <input type="text" data-section="t11" data-id="n4_ley" data-type="open"><div class="feedback" id="fb-t11-n4_ley"></div>
+    ${chatWidgetHtml('n4_ley', 'Sobre el fenómeno mecánico que elegiste, ¿qué ley física podría explicarlo?', 'Nivel 4 · Transfiero')}</div>
   <div class="question"><div class="qtext">¿Cómo lo comprobarías experimentalmente?</div>
-    <textarea data-section="t11" data-id="n4_comprobacion" data-type="open"></textarea><div class="feedback" id="fb-t11-n4_comprobacion"></div></div>
+    <textarea data-section="t11" data-id="n4_comprobacion" data-type="open"></textarea><div class="feedback" id="fb-t11-n4_comprobacion"></div>
+    ${chatWidgetHtml('n4_comprobacion', '¿Cómo comprobarías experimentalmente el fenómeno que elegiste?', 'Nivel 4 · Transfiero')}</div>
   ${buildSubmitBlock('t11')}
   `;
 }
@@ -1155,10 +1353,11 @@ function renderTema12(){
   <p class="hint">Si tienes a la mano una liga, un resorte de bolígrafo o cualquier objeto elástico, experimenta un momento estirándolo suavemente con distintas fuerzas.</p>
   <div class="question"><div class="qtext">Objeto elástico que usé</div>
     <input type="text" data-section="t12" data-id="t12_obj" data-type="open"><div class="feedback" id="fb-t12-t12_obj"></div>
-    </div>
+    ${chatWidgetHtml('t12_obj', '¿Qué objeto elástico tienes a la mano para observar (liga, resorte de bolígrafo, etc.)?', 'Tema 1.2 · Nivel 1')}</div>
   <div class="question"><div class="qtext">¿Qué pasa cuando jalo con más fuerza?</div>
     <input type="text" data-section="t12" data-id="t12_fuerza" data-type="keywords" data-groups='[["estira","alarga","estirar"],["mas","mayor"]]' data-minlength="4">
-    <div class="feedback" id="fb-t12-t12_fuerza"></div></div>
+    <div class="feedback" id="fb-t12-t12_fuerza"></div>
+    ${chatWidgetHtml('t12_fuerza', 'Cuando jalas un objeto elástico con más fuerza, ¿qué le pasa?', 'Tema 1.2 · Nivel 1')}</div>
   <div class="question"><div class="qtext">¿El objeto regresa a su forma original al soltarlo?</div>
     <div class="options">
       <label><input type="radio" name="t12-regresa" data-section="t12" data-id="t12_regresa" data-type="choice" data-correct="si" value="si" onchange="toggleRegresaFollowup('si')"> Sí</label>
@@ -1169,6 +1368,7 @@ function renderTema12(){
       <div class="qtext" id="followup-label-t12_regresa"></div>
       <textarea data-section="t12" data-id="t12_regresa_caso" data-type="open" placeholder="Escribe tu respuesta..."></textarea>
       <div class="feedback" id="fb-t12-t12_regresa_caso"></div>
+      ${chatWidgetHtml('t12_regresa_caso', 'Estoy pensando en cuándo un objeto elástico dejaría de comportarse como esperamos (o al revés). ¿Me ayudas a razonarlo?', 'Tema 1.2 · Nivel 1')}
     </div>
   </div>
 
@@ -1179,6 +1379,7 @@ function renderTema12(){
       data-groups='[["longitud natural"],["masa"],["fuerza","peso"],["alargamiento","estiramiento"],["soporte"]]'
       data-minlength="40" placeholder="Escribe tu descripción..."></textarea>
     <div class="feedback" id="fb-t12-t12_descripcion"></div>
+    ${chatWidgetHtml('t12_descripcion', 'Redacta una descripción técnica del fenómeno del resorte usando: longitud natural, masa, fuerza, alargamiento y soporte fijo.', 'Tema 1.2 · Nivel 2')}
   </div>
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>El resorte no es el único: obsérvalos en tu entorno</span></div></div>
@@ -1186,11 +1387,13 @@ function renderTema12(){
   <div class="question"><div class="qtext">Objeto elástico 1 / Fuerza que se le aplica / Qué le sucede</div>
     <input type="text" data-section="t12" data-id="t12_obj1" data-type="open" placeholder="Objeto elástico"><div class="feedback" id="fb-t12-t12_obj1"></div>
     <input type="text" data-section="t12" data-id="t12_fuerza1" data-type="open" placeholder="Fuerza que se le aplica" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_fuerza1"></div>
-    <input type="text" data-section="t12" data-id="t12_efecto1" data-type="open" placeholder="Qué le sucede" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_efecto1"></div></div>
+    <input type="text" data-section="t12" data-id="t12_efecto1" data-type="open" placeholder="Qué le sucede" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_efecto1"></div>
+    ${chatWidgetHtml('t12_obj1', 'Elige un objeto elástico de tu vida diaria y describe qué fuerza se le aplica y qué le sucede.', 'Tema 1.2 · Nivel 3')}</div>
   <div class="question"><div class="qtext">Objeto elástico 2 / Fuerza que se le aplica / Qué le sucede</div>
     <input type="text" data-section="t12" data-id="t12_obj2" data-type="open" placeholder="Objeto elástico"><div class="feedback" id="fb-t12-t12_obj2"></div>
     <input type="text" data-section="t12" data-id="t12_fuerza2" data-type="open" placeholder="Fuerza que se le aplica" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_fuerza2"></div>
-    <input type="text" data-section="t12" data-id="t12_efecto2" data-type="open" placeholder="Qué le sucede" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_efecto2"></div></div>
+    <input type="text" data-section="t12" data-id="t12_efecto2" data-type="open" placeholder="Qué le sucede" style="margin-top:8px;"><div class="feedback" id="fb-t12-t12_efecto2"></div>
+    ${chatWidgetHtml('t12_obj2', 'Elige un segundo objeto elástico de tu vida diaria y describe qué fuerza se le aplica y qué le sucede.', 'Tema 1.2 · Nivel 3')}</div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: diseña tu propia observación</span></div></div>
   <p class="hint">Diseña un protocolo de observación: una lista de pasos ordenados para observar un resorte real sin dejar pasar ningún detalle importante.</p>
@@ -1201,7 +1404,8 @@ function renderTema12(){
   <div class="question"><div class="qtext">Paso 3</div>
     <input type="text" data-section="t12" data-id="t12_paso3" data-type="open"><div class="feedback" id="fb-t12-t12_paso3"></div></div>
   <div class="question"><div class="qtext">Paso 4</div>
-    <input type="text" data-section="t12" data-id="t12_paso4" data-type="open"><div class="feedback" id="fb-t12-t12_paso4"></div></div>
+    <input type="text" data-section="t12" data-id="t12_paso4" data-type="open"><div class="feedback" id="fb-t12-t12_paso4"></div>
+    ${chatWidgetHtml('t12_paso4', 'Ayúdame a diseñar un protocolo de observación de 4 pasos para un resorte real.', 'Tema 1.2 · Nivel 4')}</div>
   ${buildSubmitBlock('t12')}
   `;
 }
@@ -1238,10 +1442,12 @@ function renderTema13(){
   </div>
   <div class="question"><div class="qtext">En el experimento del resorte, ¿cuál es la variable independiente?</div>
     <input type="text" data-section="t13" data-id="t13_indep" data-type="keywords" data-groups='[["masa"]]'>
-    <div class="feedback" id="fb-t13-t13_indep"></div></div>
+    <div class="feedback" id="fb-t13-t13_indep"></div>
+    ${chatWidgetHtml('t13_indep', 'En el experimento del resorte, ¿cuál es la variable independiente?', 'Tema 1.3 · Nivel 1')}</div>
   <div class="question"><div class="qtext">¿Y cuál es la variable dependiente?</div>
     <input type="text" data-section="t13" data-id="t13_dep" data-type="keywords" data-groups='[["alargamiento","estiramiento"]]'>
-    <div class="feedback" id="fb-t13-t13_dep"></div></div>
+    <div class="feedback" id="fb-t13-t13_dep"></div>
+    ${chatWidgetHtml('t13_dep', 'En el experimento del resorte, ¿cuál es la variable dependiente?', 'Tema 1.3 · Nivel 1')}</div>
 
   <div class="qr-resource-box">
     <img class="qr-code" src="${IMG_QR_T13_IDENTIFICO}" alt="Código QR: ¿Cómo identifico las variables de un fenómeno?">
@@ -1266,13 +1472,16 @@ function renderTema13(){
   </div>
   <div class="question"><div class="qtext">Calentar agua y medir su temperatura cada minuto. Independiente / Dependiente</div>
     <input type="text" data-section="t13" data-id="t13_s1ind" data-type="keywords" data-groups='[["tiempo","minutos"]]' placeholder="Variable independiente"><div class="feedback" id="fb-t13-t13_s1ind"></div>
-    <input type="text" data-section="t13" data-id="t13_s1dep" data-type="keywords" data-groups='[["temperatura"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s1dep"></div></div>
+    <input type="text" data-section="t13" data-id="t13_s1dep" data-type="keywords" data-groups='[["temperatura"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s1dep"></div>
+    ${chatWidgetHtml('t13_s1', 'Calentar agua y medir su temperatura cada minuto: ¿cuál es la variable independiente y cuál la dependiente?', 'Tema 1.3 · Nivel 2')}</div>
   <div class="question"><div class="qtext">Dejar caer una pelota desde distintas alturas y medir el tiempo que tarda en llegar al piso.</div>
     <input type="text" data-section="t13" data-id="t13_s2ind" data-type="keywords" data-groups='[["altura"]]' placeholder="Variable independiente"><div class="feedback" id="fb-t13-t13_s2ind"></div>
-    <input type="text" data-section="t13" data-id="t13_s2dep" data-type="keywords" data-groups='[["tiempo"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s2dep"></div></div>
+    <input type="text" data-section="t13" data-id="t13_s2dep" data-type="keywords" data-groups='[["tiempo"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s2dep"></div>
+    ${chatWidgetHtml('t13_s2', 'Dejar caer una pelota desde distintas alturas y medir el tiempo que tarda en llegar al piso: ¿cuál es la variable independiente y cuál la dependiente?', 'Tema 1.3 · Nivel 2')}</div>
   <div class="question"><div class="qtext">Aplicar distintas fuerzas a un resorte y medir cuánto se estira.</div>
     <input type="text" data-section="t13" data-id="t13_s3ind" data-type="keywords" data-groups='[["fuerza"]]' placeholder="Variable independiente"><div class="feedback" id="fb-t13-t13_s3ind"></div>
-    <input type="text" data-section="t13" data-id="t13_s3dep" data-type="keywords" data-groups='[["estiramiento","alargamiento"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s3dep"></div></div>
+    <input type="text" data-section="t13" data-id="t13_s3dep" data-type="keywords" data-groups='[["estiramiento","alargamiento"]]' placeholder="Variable dependiente" style="margin-top:8px;"><div class="feedback" id="fb-t13-t13_s3dep"></div>
+    ${chatWidgetHtml('t13_s3', 'Aplicar distintas fuerzas a un resorte y medir cuánto se estira: ¿cuál es la variable independiente y cuál la dependiente?', 'Tema 1.3 · Nivel 2')}</div>
 
   <p class="topic-intro" style="margin-top:26px;">No todas las variables se relacionan de la misma forma. Algunas relaciones son lineales (una recta), otras proporcionales, otras cuadráticas o inversamente proporcionales — el tipo de relación cambia cómo se comporta una variable cuando la otra cambia.</p>
   <div class="qr-resource-box">
@@ -1287,7 +1496,8 @@ function renderTema13(){
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>Variables en tu entorno</span></div></div>
   <p class="hint">Piensa en una situación de tu comunidad donde una cantidad dependa claramente de otra (gasto de gasolina, agua de una llave, costo de un mandado...).</p>
   <div class="question"><div class="qtext">Situación de mi comunidad</div>
-    <input type="text" data-section="t13" data-id="t13_situacion" data-type="open"><div class="feedback" id="fb-t13-t13_situacion"></div></div>
+    <input type="text" data-section="t13" data-id="t13_situacion" data-type="open"><div class="feedback" id="fb-t13-t13_situacion"></div>
+    ${chatWidgetHtml('t13_situacion', 'Piensa en una situación de tu comunidad donde una cantidad dependa claramente de otra.', 'Tema 1.3 · Nivel 3')}</div>
   <div class="question"><div class="qtext">Variable independiente</div>
     <input type="text" data-section="t13" data-id="t13_var_ind" data-type="open"><div class="feedback" id="fb-t13-t13_var_ind"></div></div>
   <div class="question"><div class="qtext">Variable dependiente</div>
@@ -1295,18 +1505,20 @@ function renderTema13(){
   <div class="question"><div class="qtext">¿Qué tipo de relación crees que hay entre ellas? (lineal, proporcional, cuadrática, inversa)</div>
     <input type="text" data-section="t13" data-id="t13_tipo_relacion" data-type="keywords" data-groups='[["lineal","proporcional"],["cuadratica"],["inversa","inversamente"]]'>
     <div class="feedback" id="fb-t13-t13_tipo_relacion"></div>
-    </div>
+    ${chatWidgetHtml('t13_tipo_relacion', '¿Qué tipo de relación (lineal, proporcional, cuadrática, inversa) crees que hay entre las variables de tu situación?', 'Tema 1.3 · Nivel 3')}</div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: predicción con variables</span></div></div>
   <p class="hint">Si sabes que la relación entre fuerza y alargamiento es lineal (F = kx):</p>
   <div class="question"><div class="qtext">Si duplico la masa colgada, el alargamiento...</div>
     <input type="text" data-section="t13" data-id="t13_duplica" data-type="keywords" data-groups='[["duplica","dobla","doble"]]'>
-    <div class="feedback" id="fb-t13-t13_duplica"></div></div>
+    <div class="feedback" id="fb-t13-t13_duplica"></div>
+    ${chatWidgetHtml('t13_duplica', 'Si duplico la masa colgada del resorte, ¿qué le pasa al alargamiento?', 'Tema 1.3 · Nivel 4')}</div>
   <div class="question"><div class="qtext">Si triplico la masa, el alargamiento...</div>
     <input type="text" data-section="t13" data-id="t13_triplica" data-type="keywords" data-groups='[["triplica","triple"]]'>
     <div class="feedback" id="fb-t13-t13_triplica"></div></div>
   <div class="question"><div class="qtext">¿Por qué?</div>
-    <textarea data-section="t13" data-id="t13_porque" data-type="open"></textarea><div class="feedback" id="fb-t13-t13_porque"></div></div>
+    <textarea data-section="t13" data-id="t13_porque" data-type="open"></textarea><div class="feedback" id="fb-t13-t13_porque"></div>
+    ${chatWidgetHtml('t13_porque', '¿Por qué el alargamiento cambia proporcionalmente cuando cambia la masa?', 'Tema 1.3 · Nivel 4')}</div>
   ${buildSubmitBlock('t13')}
   `;
 }
@@ -1347,28 +1559,34 @@ function renderTema14(){
   <div class="question"><div class="qtext">Con tus palabras, ¿qué hace buena a una hipótesis?</div>
     <textarea data-section="t14" data-id="t14_reflexion" data-type="keywords"
       data-groups='[["especifica"],["comprobar","comprobable"],["variable"]]' data-minlength="10"></textarea>
-    <div class="feedback" id="fb-t14-t14_reflexion"></div></div>
+    <div class="feedback" id="fb-t14-t14_reflexion"></div>
+    ${chatWidgetHtml('t14_reflexion', 'Con tus palabras, ¿qué hace buena a una hipótesis científica?', 'Tema 1.4 · Nivel 1')}</div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Redacta hipótesis a partir de una observación</span></div></div>
   <div class="question"><div class="qtext">Observación: entre más rápido corre alguien, más se cansa. Tu hipótesis:</div>
-    <input type="text" data-section="t14" data-id="t14_hip1" data-type="open"><div class="feedback" id="fb-t14-t14_hip1"></div></div>
+    <input type="text" data-section="t14" data-id="t14_hip1" data-type="open"><div class="feedback" id="fb-t14-t14_hip1"></div>
+    ${chatWidgetHtml('t14_hip1', 'Convierte esta observación en una hipótesis específica: "entre más rápido corre alguien, más se cansa".', 'Tema 1.4 · Nivel 2')}</div>
   <div class="question"><div class="qtext">Observación: los globos más inflados truenan más fuerte. Tu hipótesis:</div>
     <input type="text" data-section="t14" data-id="t14_hip2" data-type="open"><div class="feedback" id="fb-t14-t14_hip2"></div></div>
   <div class="question"><div class="qtext">Mi hipótesis sobre la relación entre la fuerza aplicada y el alargamiento del resorte</div>
-    <textarea data-section="t14" data-id="t14_hip_resorte" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_hip_resorte"></div></div>
+    <textarea data-section="t14" data-id="t14_hip_resorte" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_hip_resorte"></div>
+    ${chatWidgetHtml('t14_hip_resorte', 'Ayúdame a plantear mi propia hipótesis sobre la relación entre la fuerza aplicada a un resorte y su alargamiento.', 'Tema 1.4 · Nivel 2')}</div>
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>Hipótesis sobre un fenómeno de tu vida diaria</span></div></div>
   <div class="question"><div class="qtext">Mi hipótesis (retoma tu situación del tema 1.3 o elige una nueva)</div>
-    <textarea data-section="t14" data-id="t14_hip_vida" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_hip_vida"></div></div>
+    <textarea data-section="t14" data-id="t14_hip_vida" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_hip_vida"></div>
+    ${chatWidgetHtml('t14_hip_vida', 'Plantea una hipótesis específica y comprobable sobre una situación de tu vida diaria.', 'Tema 1.4 · Nivel 3')}</div>
   <div class="question"><div class="qtext">¿Cómo la comprobarías?</div>
     <input type="text" data-section="t14" data-id="t14_comprobacion" data-type="open"><div class="feedback" id="fb-t14-t14_comprobacion"></div></div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: hipótesis y contrahipótesis</span></div></div>
   <p class="hint">Todo buen investigador considera también la posibilidad de estar equivocado.</p>
   <div class="question"><div class="qtext">Hipótesis alternativa a la de tu resorte (nivel 2)</div>
-    <input type="text" data-section="t14" data-id="t14_hip_alt" data-type="open"><div class="feedback" id="fb-t14-t14_hip_alt"></div></div>
+    <input type="text" data-section="t14" data-id="t14_hip_alt" data-type="open"><div class="feedback" id="fb-t14-t14_hip_alt"></div>
+    ${chatWidgetHtml('t14_hip_alt', 'Ayúdame a pensar una hipótesis alternativa razonable a mi hipótesis original sobre el resorte.', 'Tema 1.4 · Nivel 4')}</div>
   <div class="question"><div class="qtext">¿Cómo distinguirías cuál es la correcta al ver la gráfica de tus datos?</div>
-    <textarea data-section="t14" data-id="t14_distincion" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_distincion"></div></div>
+    <textarea data-section="t14" data-id="t14_distincion" data-type="open"></textarea><div class="feedback" id="fb-t14-t14_distincion"></div>
+    ${chatWidgetHtml('t14_distincion', '¿Cómo podrías distinguir, mirando una gráfica de tus datos, cuál de las dos hipótesis es la correcta?', 'Tema 1.4 · Nivel 4')}</div>
   ${buildSubmitBlock('t14')}
   `;
 }
@@ -1438,24 +1656,36 @@ function renderTema15(){
   <p class="hint">Columnas del simulador: Masa (g), Fuerza (N), Posición (cm), Alargamiento (cm).</p>
   <div class="question"><div class="qtext">En la tabla del simulador, ¿cuál es la variable independiente?</div>
     <input type="text" data-section="t15" data-id="t15_indep" data-type="keywords" data-groups='[["masa"]]'>
-    <div class="feedback" id="fb-t15-t15_indep"></div></div>
+    <div class="feedback" id="fb-t15-t15_indep"></div>
+    ${chatWidgetHtml('t15_indep', 'En la tabla del simulador de Ley de Hooke, ¿cuál columna es la variable independiente?', 'Tema 1.5 · Nivel 1')}</div>
   <div class="question"><div class="qtext">¿Y la dependiente?</div>
     <input type="text" data-section="t15" data-id="t15_dep" data-type="keywords" data-groups='[["alargamiento","estiramiento"]]'>
     <div class="feedback" id="fb-t15-t15_dep"></div></div>
+
+  <div class="qr-resource-box">
+    <img class="qr-code" src="${IMG_QR_T15_TABLA}" alt="Código QR: ¿Qué hace buena una tabla de registro de datos?">
+    <div class="qr-text">
+      <b>📋 Recurso interactivo · ¿Qué hace buena una tabla de registro de datos?</b>
+      <p>Escanea el código o <a class="qr-link" href="https://mtraargelia.github.io/Cuaderno-interactivo-Progresion1-APM/Tema-1.5-Tabla-de-Registro.html" target="_blank" rel="noopener noreferrer">abre el enlace</a> para practicar cómo diseñar una buena tabla de registro antes de llenar la de este tema — una habilidad que vas a necesitar cuando construyas tu propio experimento.</p>
+    </div>
+  </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Registra tus propios datos en el simulador</span></div></div>
   <p class="hint">Entra al simulador (botón de arriba), elige "Muelle 1" y cuelga las masas indicadas. Registra lo que veas en cada columna. La última fila es un reto: encuentra qué masa produce esa posición y alargamiento.</p>
   <div class="question">
     ${buildT15TableHtml()}
+    ${chatWidgetHtml('t15_tabla', 'Estoy registrando datos del simulador de Ley de Hooke en una tabla de 7 filas y tengo dudas sobre cómo leer o completar alguna columna.', 'Tema 1.5 · Nivel 2')}
   </div>
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>Compara dos resortes distintos</span></div></div>
   <p class="hint">Repite el registro con un segundo resorte (cambia la opción "Muelle") usando las mismas masas.</p>
   <div class="question"><div class="qtext">Con la misma fuerza aplicada, ¿cuál de los dos resortes se estiró más?</div>
-    <input type="text" data-section="t15" data-id="t15_comparacion" data-type="open"><div class="feedback" id="fb-t15-t15_comparacion"></div></div>
+    <input type="text" data-section="t15" data-id="t15_comparacion" data-type="open"><div class="feedback" id="fb-t15-t15_comparacion"></div>
+    ${chatWidgetHtml('t15_comparacion', 'Comparé dos resortes distintos con la misma fuerza aplicada. ¿Cómo interpreto cuál se estiró más?', 'Tema 1.5 · Nivel 3')}</div>
   <div class="question"><div class="qtext">¿Qué crees que significa esto sobre qué tan "rígido" es cada resorte?</div>
     <textarea data-section="t15" data-id="t15_rigidez" data-type="keywords" data-groups='[["rigido","rigidez"],["constante","k"]]' data-minlength="8"></textarea>
-    <div class="feedback" id="fb-t15-t15_rigidez"></div></div>
+    <div class="feedback" id="fb-t15-t15_rigidez"></div>
+    ${chatWidgetHtml('t15_rigidez', '¿Qué significa que un resorte se estire menos que otro con la misma fuerza, en términos de qué tan "rígido" es?', 'Tema 1.5 · Nivel 3')}</div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: diseña tu propio experimento de registro</span></div></div>
   <p class="hint">Si tuvieras un resorte, liga o elástico real y monedas/tuercas/piedras de distinto peso como "masas", diseña la tabla de datos que usarías.</p>
@@ -1464,7 +1694,8 @@ function renderTema15(){
   <div class="question"><div class="qtext">Paso 2</div>
     <input type="text" data-section="t15" data-id="t15_paso2" data-type="open"><div class="feedback" id="fb-t15-t15_paso2"></div></div>
   <div class="question"><div class="qtext">Paso 3</div>
-    <input type="text" data-section="t15" data-id="t15_paso3" data-type="open"><div class="feedback" id="fb-t15-t15_paso3"></div></div>
+    <input type="text" data-section="t15" data-id="t15_paso3" data-type="open"><div class="feedback" id="fb-t15-t15_paso3"></div>
+    ${chatWidgetHtml('t15_paso3', 'Ayúdame a diseñar un experimento casero para medir el alargamiento de un objeto elástico con pesos improvisados.', 'Tema 1.5 · Nivel 4')}</div>
   ${buildSubmitBlock('t15')}
   `;
 }
@@ -1499,11 +1730,21 @@ function renderTema16(){
   </div>
   <div class="question"><div class="qtext">Con tus palabras, ¿cuál es la diferencia entre precisión y exactitud?</div>
     <textarea data-section="t16" data-id="t16_diferencia" data-type="keywords" data-groups='[["parecidas","consistentes","repetibles"],["cerca","real","verdadero"]]' data-minlength="15"></textarea>
-    <div class="feedback" id="fb-t16-t16_diferencia"></div></div>
+    <div class="feedback" id="fb-t16-t16_diferencia"></div>
+    ${chatWidgetHtml('t16_diferencia', 'No entiendo bien la diferencia entre precisión y exactitud. ¿Me ayudas?', 'Tema 1.6 · Nivel 1')}</div>
   <p class="hint">Calibrar un instrumento significa verificar y ajustar que marque cero (o el valor correcto) antes de medir.</p>
   <div class="question"><div class="qtext">Si usaras una regla física para medir el alargamiento, ¿qué pasos seguirías para calibrarla? (2 pasos)</div>
     <input type="text" data-section="t16" data-id="t16_calib1" data-type="open" placeholder="Paso 1"><div class="feedback" id="fb-t16-t16_calib1"></div>
-    <input type="text" data-section="t16" data-id="t16_calib2" data-type="open" placeholder="Paso 2" style="margin-top:8px;"><div class="feedback" id="fb-t16-t16_calib2"></div></div>
+    <input type="text" data-section="t16" data-id="t16_calib2" data-type="open" placeholder="Paso 2" style="margin-top:8px;"><div class="feedback" id="fb-t16-t16_calib2"></div>
+    ${chatWidgetHtml('t16_calib1', '¿Qué pasos seguiría para calibrar una regla física antes de medir el alargamiento de un resorte?', 'Tema 1.6 · Nivel 1')}</div>
+
+  <div class="qr-resource-box">
+    <img class="qr-code" src="${IMG_QR_T16_PRECISION}" alt="Código QR: Precisión y exactitud: el blanco de tiro">
+    <div class="qr-text">
+      <b>🎯 Recurso interactivo · Precisión y exactitud: el blanco de tiro</b>
+      <p>Escanea el código o <a class="qr-link" href="https://mtraargelia.github.io/Cuaderno-interactivo-Progresion1-APM/Tema-1.6-Precision-y-Exactitud.html" target="_blank" rel="noopener noreferrer">abre el enlace</a> para ver la clásica analogía del blanco de tiro y practicar cómo distinguir precisión de exactitud antes de continuar.</p>
+    </div>
+  </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Detecta un dato poco confiable</span></div></div>
   <p class="hint">Un equipo registró (Masa g, Alargamiento cm): (30,1.35) (35,0.66) (40,1.52) (45,1.06) (50,0.93) (55,2.24). La relación debería ser creciente.</p>
@@ -1511,7 +1752,7 @@ function renderTema16(){
   <div class="question"><div class="qtext">¿Qué punto (masa, alargamiento) parece poco confiable?</div>
     <input type="text" data-section="t16" data-id="t16_outlier" data-type="keywords" data-groups='[["35"],["0.66"]]'>
     <div class="feedback" id="fb-t16-t16_outlier"></div>
-    </div>
+    ${chatWidgetHtml('t16_outlier', 'Tengo esta tabla de masa y alargamiento: (30,1.35) (35,0.66) (40,1.52) (45,1.06) (50,0.93) (55,2.24). ¿Cómo identifico cuál dato no sigue la tendencia?', 'Tema 1.6 · Nivel 2')}</div>
   <div class="question"><div class="qtext">¿Qué pudo haber causado ese error de medición?</div>
     <input type="text" data-section="t16" data-id="t16_causa" data-type="open"><div class="feedback" id="fb-t16-t16_causa"></div></div>
 
@@ -1524,7 +1765,7 @@ function renderTema16(){
       <img id="preview-t16-t16_geogebra_foto" class="image-preview" alt="Vista previa de tu gráfica">
     </div>
     <div class="feedback" id="fb-t16-t16_geogebra_foto"></div>
-    
+    ${chatWidgetHtml('t16_geogebra', 'Estoy ubicando los puntos (masa, alargamiento) en GeoGebra para comprobar la gráfica del tema 1.6. ¿Cómo agrego un punto usando sus coordenadas?', 'Tema 1.6 · Nivel 2')}
   </div>
 
   <p class="hint">Repite tres veces la medición del alargamiento para la misma masa (por ejemplo 40 g) en el simulador.</p>
@@ -1535,7 +1776,8 @@ function renderTema16(){
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>Confiabilidad en instrumentos de tu vida diaria</span></div></div>
   <div class="question"><div class="qtext">Instrumento de medición de tu comunidad (báscula, cinta métrica, termómetro...)</div>
-    <input type="text" data-section="t16" data-id="t16_instrumento" data-type="open"><div class="feedback" id="fb-t16-t16_instrumento"></div></div>
+    <input type="text" data-section="t16" data-id="t16_instrumento" data-type="open"><div class="feedback" id="fb-t16-t16_instrumento"></div>
+    ${chatWidgetHtml('t16_instrumento', 'Piensa en un instrumento de medición de tu comunidad y qué pasaría si no estuviera calibrado.', 'Tema 1.6 · Nivel 3')}</div>
   <div class="question"><div class="qtext">¿Qué pasaría si no estuviera bien calibrado? ¿Qué consecuencia real tendría?</div>
     <textarea data-section="t16" data-id="t16_consecuencia" data-type="open"></textarea><div class="feedback" id="fb-t16-t16_consecuencia"></div></div>
 
@@ -1546,7 +1788,8 @@ function renderTema16(){
   <div class="question"><div class="qtext">Paso 2</div>
     <input type="text" data-section="t16" data-id="t16_protocolo2" data-type="open"><div class="feedback" id="fb-t16-t16_protocolo2"></div></div>
   <div class="question"><div class="qtext">Paso 3</div>
-    <input type="text" data-section="t16" data-id="t16_protocolo3" data-type="open"><div class="feedback" id="fb-t16-t16_protocolo3"></div></div>
+    <input type="text" data-section="t16" data-id="t16_protocolo3" data-type="open"><div class="feedback" id="fb-t16-t16_protocolo3"></div>
+    ${chatWidgetHtml('t16_protocolo3', 'Ayúdame a diseñar un protocolo de 3 pasos para garantizar mediciones confiables.', 'Tema 1.6 · Nivel 4')}</div>
   ${buildSubmitBlock('t16')}
   `;
 }
@@ -1585,10 +1828,19 @@ function renderTema17(){
   <div class="question"><div class="qtext">¿Qué significa que la gráfica pase por el origen (0,0)?</div>
     <input type="text" data-section="t17" data-id="t17_origen" data-type="keywords" data-groups='[["proporcional"]]'>
     <div class="feedback" id="fb-t17-t17_origen"></div>
-    </div>
+    ${chatWidgetHtml('t17_origen', '¿Qué significa físicamente que una gráfica de Fuerza vs Alargamiento pase por el origen (0,0)?', 'Tema 1.7 · Nivel 1')}</div>
   <div class="question"><div class="qtext">En el ejemplo guiado, ¿cuál es el valor de la pendiente (k)?</div>
     <input type="text" data-section="t17" data-id="t17_pendiente_ej" data-type="numeric" data-correct="0.5">
-    <div class="feedback" id="fb-t17-t17_pendiente_ej"></div></div>
+    <div class="feedback" id="fb-t17-t17_pendiente_ej"></div>
+    ${chatWidgetHtml('t17_pendiente_ej', 'No entiendo cómo se calculó la pendiente en el ejemplo guiado de la gráfica F vs x.', 'Tema 1.7 · Nivel 1')}</div>
+
+  <div class="qr-resource-box">
+    <img class="qr-code" src="${IMG_QR_T17_GRAFICA}" alt="Código QR: De la gráfica a la fórmula">
+    <div class="qr-text">
+      <b>📈 Recurso interactivo · De la gráfica a la fórmula</b>
+      <p>Escanea el código o <a class="qr-link" href="https://mtraargelia.github.io/Cuaderno-interactivo-Progresion1-APM/Tema-1.7-De-la-Grafica-a-la-Formula.html" target="_blank" rel="noopener noreferrer">abre el enlace</a> para practicar cómo sacar la pendiente en tres gráficas completamente distintas al resorte — la misma habilidad que usarás con tus propios datos.</p>
+    </div>
+  </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Grafica tus propios datos del simulador</span></div></div>
   <p class="hint">Con los datos que registraste en el tema 1.5, dibuja en tu cuaderno la gráfica de Fuerza (N) vs. Alargamiento (cm). Si necesitas volver a registrar o revisar tus datos, puedes regresar al simulador:</p>
@@ -1598,26 +1850,30 @@ function renderTema17(){
       <label><input type="radio" name="t17-recta" data-section="t17" data-id="t17_recta" data-type="choice" data-correct="si" value="si"> Sí</label>
       <label><input type="radio" name="t17-recta" data-section="t17" data-id="t17_recta" data-type="choice" data-correct="si" value="no"> No</label>
     </div>
-    <div class="feedback" id="fb-t17-t17_recta"></div></div>
+    <div class="feedback" id="fb-t17-t17_recta"></div>
+    ${chatWidgetHtml('t17_recta', 'Ya grafiqué mis datos de Fuerza vs Alargamiento. ¿Cómo sé si los puntos forman una línea recta?', 'Tema 1.7 · Nivel 2')}</div>
   <div class="question"><div class="qtext">Pendiente (constante elástica k) que calculaste</div>
     <div style="display:flex; align-items:center; gap:8px;">
       <input type="text" data-section="t17" data-id="t17_k" data-type="open" placeholder="Ej. 0.5" style="flex:1;">
       <span style="color:var(--gray); font-size:.9rem; white-space:nowrap;">N/cm</span>
     </div>
-    <div class="feedback" id="fb-t17-t17_k"></div></div>
+    <div class="feedback" id="fb-t17-t17_k"></div>
+    ${chatWidgetHtml('t17_k', 'Ya grafiqué mis datos de Fuerza vs Alargamiento pero no sé cómo calcular la pendiente k.', 'Tema 1.7 · Nivel 2')}</div>
   <div class="question"><div class="qtext">Ecuación de mi modelo: F = ___ · x</div>
     <input type="text" data-section="t17" data-id="t17_ecuacion" data-type="open"><div class="feedback" id="fb-t17-t17_ecuacion"></div></div>
 
   <div class="level-header lvl-3"><div class="badge">3</div><div class="txt"><b>NIVEL 3 · APLICO</b><span>Compara tus dos resortes</span></div></div>
   <div class="question"><div class="qtext">¿Cuál resorte tiene mayor constante elástica k? ¿Qué significa esto físicamente?</div>
-    <textarea data-section="t17" data-id="t17_comparacion_k" data-type="open"></textarea><div class="feedback" id="fb-t17-t17_comparacion_k"></div></div>
+    <textarea data-section="t17" data-id="t17_comparacion_k" data-type="open"></textarea><div class="feedback" id="fb-t17-t17_comparacion_k"></div>
+    ${chatWidgetHtml('t17_comparacion_k', 'Comparé la constante k de mis dos resortes. ¿Cómo interpreto cuál es más rígido?', 'Tema 1.7 · Nivel 3')}</div>
 
   <div class="level-header lvl-4"><div class="badge">4</div><div class="txt"><b>NIVEL 4 · TRANSFIERO</b><span>Reto: predicción con tu modelo</span></div></div>
   <p class="hint">Usa tu ecuación F = kx para predecir un alargamiento que NO mediste directamente, y verifícalo en el simulador.</p>
   <div class="question"><div class="qtext">Fuerza que voy a predecir (N)</div>
     <input type="text" data-section="t17" data-id="t17_fuerza_pred" data-type="open"><div class="feedback" id="fb-t17-t17_fuerza_pred"></div></div>
   <div class="question"><div class="qtext">Cálculo: x = F / k</div>
-    <input type="text" data-section="t17" data-id="t17_calculo_pred" data-type="open"><div class="feedback" id="fb-t17-t17_calculo_pred"></div></div>
+    <input type="text" data-section="t17" data-id="t17_calculo_pred" data-type="open"><div class="feedback" id="fb-t17-t17_calculo_pred"></div>
+    ${chatWidgetHtml('t17_calculo_pred', 'Quiero usar mi modelo F = kx para predecir un alargamiento. ¿Cómo despejo x?', 'Tema 1.7 · Nivel 4')}</div>
   <div class="question"><div class="qtext">Valor real observado en el simulador</div>
     <input type="text" data-section="t17" data-id="t17_valor_real" data-type="open"><div class="feedback" id="fb-t17-t17_valor_real"></div></div>
   <div class="question"><div class="qtext">¿Qué tan cerca estuvo tu predicción? ¿Qué explica la diferencia, si la hay?</div>
@@ -1669,7 +1925,8 @@ function renderAutoeval(){
   ${selfRateRow('autoeval','a10','Puedo usar mi modelo matemático (F = kx) para predecir un valor no medido.')}
   <h3 style="color:var(--navy); font-size:1.05rem; margin-top:26px;">Reflexión final</h3>
   <div class="question"><div class="qtext">¿Cuál fue el reto que más se me dificultó y por qué?</div>
-    <textarea data-section="autoeval" data-id="reflexion1" data-type="open"></textarea><div class="feedback" id="fb-autoeval-reflexion1"></div></div>
+    <textarea data-section="autoeval" data-id="reflexion1" data-type="open"></textarea><div class="feedback" id="fb-autoeval-reflexion1"></div>
+    ${chatWidgetHtml('autoeval_reflexion1', 'Quiero reflexionar sobre cuál fue el reto que más se me dificultó de toda esta progresión sobre la Ley de Hooke.', 'Autoevaluación')}</div>
   <div class="question"><div class="qtext">¿Qué haría diferente si repitiera el experimento del resorte?</div>
     <textarea data-section="autoeval" data-id="reflexion2" data-type="open"></textarea><div class="feedback" id="fb-autoeval-reflexion2"></div></div>
   `;
@@ -1762,17 +2019,20 @@ function renderSumativa(){
   </div>
 
   <div class="question"><div class="qtext">1. Hipótesis específica sobre la relación entre fuerza y alargamiento del material que vas a probar</div>
-    <textarea data-section="sumativa" data-id="hipotesis" data-type="open"></textarea><div class="feedback" id="fb-sumativa-hipotesis"></div></div>
+    <textarea data-section="sumativa" data-id="hipotesis" data-type="open"></textarea><div class="feedback" id="fb-sumativa-hipotesis"></div>
+    ${chatWidgetHtml('sumativa_hipotesis', 'Estoy en el reto final integrador. Ayúdame a redactar mi hipótesis sobre el material elástico que voy a probar.', 'Evaluación sumativa')}</div>
   <div class="question"><div class="qtext">2. Variable independiente, dependiente y dos controladas</div>
     <textarea data-section="sumativa" data-id="variables" data-type="open"></textarea><div class="feedback" id="fb-sumativa-variables"></div></div>
 
   <div class="question">
     <div class="qtext">3. Registra al menos 6 datos en una tabla (puedes usar la del simulador con un tercer resorte, o inventar un objeto elástico de tu comunidad)</div>
     ${buildSumativaTableHtml()}
+    ${chatWidgetHtml('sumativa_tabla', 'Estoy registrando los datos de mi reto final. ¿Qué debería anotar en cada columna de la tabla?', 'Evaluación sumativa')}
   </div>
 
   <div class="question"><div class="qtext">4. Señala qué acciones tomarías para asegurar que tus mediciones sean confiables (calibración y repetición)</div>
-    <textarea data-section="sumativa" data-id="confiabilidad" data-type="open"></textarea><div class="feedback" id="fb-sumativa-confiabilidad"></div></div>
+    <textarea data-section="sumativa" data-id="confiabilidad" data-type="open"></textarea><div class="feedback" id="fb-sumativa-confiabilidad"></div>
+    ${chatWidgetHtml('sumativa_confiabilidad', '¿Qué acciones debería describir para asegurar que mis mediciones del reto final sean confiables?', 'Evaluación sumativa')}</div>
 
   <div class="question">
     <div class="qtext">5. Construye una gráfica de Fuerza vs. Alargamiento con tus datos</div>
@@ -1786,6 +2046,7 @@ function renderSumativa(){
       <img id="preview-sumativa-grafica_foto" class="image-preview" alt="Vista previa de tu gráfica">
     </div>
     <div class="feedback" id="fb-sumativa-grafica_foto"></div>
+    ${chatWidgetHtml('sumativa_grafica', 'Ya tengo mis datos del reto final, pero no sé cómo empezar a graficar Fuerza vs Alargamiento.', 'Evaluación sumativa')}
   </div>
 
   <div class="question"><div class="qtext">6. Calcula la pendiente de tu gráfica y escribe la ecuación de tu modelo matemático (F = kx)</div>
@@ -1793,7 +2054,8 @@ function renderSumativa(){
     <input type="text" data-section="sumativa" data-id="ecuacion_final" data-type="open" placeholder="Ecuación: F = ___ · x" style="margin-top:8px;"><div class="feedback" id="fb-sumativa-ecuacion_final"></div></div>
 
   <div class="question"><div class="qtext">7. Usa tu modelo para predecir un valor de fuerza o alargamiento que no hayas medido directamente, y explica qué significaría para el/la artesano/a de la situación</div>
-    <textarea data-section="sumativa" data-id="prediccion_final" data-type="open"></textarea><div class="feedback" id="fb-sumativa-prediccion_final"></div></div>
+    <textarea data-section="sumativa" data-id="prediccion_final" data-type="open"></textarea><div class="feedback" id="fb-sumativa-prediccion_final"></div>
+    ${chatWidgetHtml('sumativa_prediccion_final', 'Ya tengo mi ecuación F = kx del reto final. ¿Cómo la uso para hacer una predicción útil para el/la artesano/a de la situación?', 'Evaluación sumativa')}</div>
 
   <h3 style="color:var(--navy); font-size:1.05rem; margin-top:30px;">Rúbrica de evaluación (la revisa tu docente)</h3>
   <p class="hint">Antes de que tu docente la califique, autoevalúate: escribe cuántos puntos crees que mereces en cada criterio.</p>
@@ -1900,17 +2162,13 @@ function handleImageUpload(inputEl){
       currentProgress[section][id] = {value: dataUrl, status: 'registrado', ...(existingBest ? {bestStatus: existingBest} : {})};
       if(!currentProgress.meta) currentProgress.meta = {};
       currentProgress.meta.lastUpdated = Date.now();
-      updateObservedLevel(section);
 
       const preview = document.getElementById('preview-'+section+'-'+id);
       if(preview){ preview.src = dataUrl; preview.style.display = 'block'; }
       showFeedback(section, id, 'registrado');
       updateProgressBar();
-      currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
-      const res = await saveProgress(currentStudent.email, currentProgress);
-      if(res && res.ok){ toast('Imagen guardada ✓'); }
-      else if(res && res.closed){ showCaptureClosedBanner(res.error); }
-      else { toast('No se pudo guardar la imagen, intenta con una más ligera'); }
+      const ok = await saveProgress(currentStudent.email, currentProgress);
+      toast(ok ? 'Imagen guardada ✓' : 'No se pudo guardar la imagen, intenta con una más ligera');
     };
     img.onerror = ()=>{ alert('No pude leer esa imagen, intenta con otro archivo.'); };
     img.src = e.target.result;
@@ -1954,13 +2212,11 @@ function handleAnswer(inputEl){
   currentProgress[section][id] = {value, status, ...(existingBest ? {bestStatus: existingBest} : {})};
   if(!currentProgress.meta) currentProgress.meta = {};
   currentProgress.meta.lastUpdated = Date.now();
-  updateObservedLevel(section);
 
   applyStatusClass(inputEl, status);
   showFeedback(section, id, status);
   updateProgressBar();
-  currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
-  saveProgress(currentStudent.email, currentProgress).then(handleSaveResult);
+  saveProgress(currentStudent.email, currentProgress).then(()=>toast());
 }
 
 function applyStatusClass(inputEl, status){
@@ -2001,55 +2257,6 @@ function buildSubmitBlock(section){
   </div>`;
 }
 
-function computeLevelFractions(section, statusGetter){
-  const questions = QUESTIONS_BY_SECTION[section];
-  if(!questions) return null;
-  const byLevel = {1:[],2:[],3:[],4:[]};
-  questions.forEach(q=>{ byLevel[q.level].push(q); });
-  const levelFraction = {};
-  [1,2,3,4].forEach(L=>{
-    const qs = byLevel[L];
-    if(qs.length===0){ levelFraction[L] = 1; return; }
-    const passCount = qs.filter(q=>{
-      const st = statusGetter(section, q);
-      return st==='correcto' || st==='registrado';
-    }).length;
-    levelFraction[L] = passCount / qs.length;
-  });
-  let achieved = 0;
-  for(let L=1; L<=4; L++){
-    if(levelFraction[L] >= LEVEL_PASS_THRESHOLD){ achieved = L; } else { break; }
-  }
-  return { achieved, levelFraction };
-}
-function bestStatusGetter_(section, q){
-  const a = currentProgress[section] && currentProgress[section][q.id];
-  return a ? (a.bestStatus || null) : null;
-}
-function liveStatusGetter_(section, q){
-  return effectiveStatusFor(section, q);
-}
-
-// Se recalcula solo (sin necesidad del botón "Enviar") cada vez que el estudiante responde algo
-// en un tema. Es el que alimenta las hojas de lectura en Sheets para que el docente vea el
-// avance real en todo momento, aunque el estudiante todavía no haya dado clic en "Enviar".
-function updateObservedLevel(section){
-  if(TOPIC_SECTIONS.indexOf(section)===-1) return;
-  const result = computeLevelFractions(section, liveStatusGetter_);
-  if(!result) return;
-  if(!currentProgress.observedLevels) currentProgress.observedLevels = {};
-  currentProgress.observedLevels[section] = {
-    achieved: result.achieved,
-    levelPct: {
-      1: Math.round(result.levelFraction[1]*100), 2: Math.round(result.levelFraction[2]*100),
-      3: Math.round(result.levelFraction[3]*100), 4: Math.round(result.levelFraction[4]*100),
-    }
-  };
-  if(!currentProgress.meta) currentProgress.meta = {};
-  if(!currentProgress.meta.sectionUpdated) currentProgress.meta.sectionUpdated = {};
-  currentProgress.meta.sectionUpdated[section] = Date.now();
-}
-
 async function submitSection(section){
   const questions = QUESTIONS_BY_SECTION[section];
   if(!questions) return;
@@ -2067,7 +2274,22 @@ async function submitSection(section){
   });
 
   // 2) Calcula el nivel alcanzado (secuencial: se detiene en el primer nivel que no llega al umbral)
-  const { achieved, levelFraction } = computeLevelFractions(section, bestStatusGetter_);
+  const byLevel = {1:[],2:[],3:[],4:[]};
+  questions.forEach(q=>{ byLevel[q.level].push(q); });
+  const levelFraction = {};
+  [1,2,3,4].forEach(L=>{
+    const qs = byLevel[L];
+    if(qs.length===0){ levelFraction[L] = 1; return; }
+    const passCount = qs.filter(q=>{
+      const a = currentProgress[section][q.id];
+      return a && a.bestStatus && (a.bestStatus==='correcto' || a.bestStatus==='registrado');
+    }).length;
+    levelFraction[L] = passCount / qs.length;
+  });
+  let achieved = 0;
+  for(let L=1; L<=4; L++){
+    if(levelFraction[L] >= LEVEL_PASS_THRESHOLD){ achieved = L; } else { break; }
+  }
 
   if(!currentProgress.levels) currentProgress.levels = {};
   currentProgress.levels[section] = achieved;
@@ -2075,22 +2297,17 @@ async function submitSection(section){
   currentProgress.submitted[section] = Date.now();
   if(!currentProgress.meta) currentProgress.meta = {};
   currentProgress.meta.lastUpdated = Date.now();
-  updateObservedLevel(section);
-  currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
 
-  const res = await saveProgress(currentStudent.email, currentProgress);
+  const ok = await saveProgress(currentStudent.email, currentProgress);
+  toast(ok ? 'Respuestas enviadas ✓' : 'No se pudo enviar, intenta de nuevo');
   updateProgressBar();
 
   const resultEl = document.getElementById('submit-result-'+section);
   if(resultEl){
     const detail = [1,2,3,4].map(L=>`N${L}: ${Math.round(levelFraction[L]*100)}%`).join(' · ');
     const badgeColor = achieved>=3 ? 'var(--ok)' : achieved>=1 ? 'var(--warn)' : 'var(--red)';
-    let extra = '';
-    if(res && res.ok){ toast('Respuestas enviadas ✓'); }
-    else if(res && res.closed){ showCaptureClosedBanner(res.error); extra = '<div class="hint" style="color:var(--red); margin-top:4px;">⚠ Esto NO se guardó: el periodo de captura está cerrado.</div>'; }
-    else { toast('No se pudo enviar, intenta de nuevo'); extra = '<div class="hint" style="color:var(--red); margin-top:4px;">⚠ No se pudo guardar en este momento.</div>'; }
     resultEl.innerHTML = `<span class="level-badge-result" style="background:${badgeColor};">Nivel alcanzado: ${achieved} de 4</span>
-      <div class="hint" style="margin-top:8px;">${detail}</div>${extra}`;
+      <div class="hint" style="margin-top:8px;">${detail}</div>`;
   }
 }
 
@@ -2231,13 +2448,9 @@ async function resetInstrument(){
   if(!currentStudent) return;
   const sure = confirm('¿Seguro que quieres reiniciar? Se borrarán TODAS tus respuestas guardadas de este cuadernillo. Esta acción no se puede deshacer.');
   if(!sure) return;
-  const res = await callAppsScript('resetProgress', { email: currentStudent.email });
-  if(!res || !res.ok){
-    if(res && res.closed){ showCaptureClosedBanner(res.error); }
-    else { alert('No se pudo reiniciar. Intenta de nuevo.'); }
-    return;
-  }
   currentProgress = { diag:{}, t11:{}, meta:{} };
+  const ok = await saveProgress(currentStudent.email, currentProgress);
+  if(!ok){ alert('No se pudo reiniciar. Intenta de nuevo.'); return; }
   renderWorkbook();
   toast('Cuadernillo reiniciado');
 }
