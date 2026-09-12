@@ -1449,13 +1449,13 @@ function renderTema14(){
 
 /* ============================= 1.5 REGISTRAR DATOS ============================= */
 const T15_ROW_DATA = [
-  {masa:30, fuerza:0.294, pos:6.35, alarg:1.35},
-  {masa:35, fuerza:0.343, pos:5.66, alarg:0.66},
-  {masa:40, fuerza:0.392, pos:6.52, alarg:1.52},
-  {masa:45, fuerza:0.441, pos:6.06, alarg:1.06},
-  {masa:50, fuerza:0.490, pos:5.93, alarg:0.93},
-  {masa:55, fuerza:0.540, pos:7.24, alarg:2.24},
-  {masa:null, fuerza:null, pos:7.23, alarg:2.23},
+  {masa:30, fuerza:0.294, pos:6.18, alarg:1.18},
+  {masa:35, fuerza:0.343, pos:6.37, alarg:1.37},
+  {masa:40, fuerza:0.392, pos:6.57, alarg:1.57},
+  {masa:45, fuerza:0.441, pos:6.77, alarg:1.77},
+  {masa:50, fuerza:0.490, pos:6.96, alarg:1.96},
+  {masa:55, fuerza:0.540, pos:7.16, alarg:2.16},
+  {masa:null, fuerza:null, pos:7.90, alarg:2.90},
 ];
 
 function buildT15TableQuestions(){
@@ -2031,8 +2031,30 @@ function bindInputsWithin(root){
       }
       else if(inputEl.type==='checkbox'){ inputEl.checked = saved.value==='true'; }
       else{ inputEl.value = saved.value; }
-      applyStatusClass(inputEl, saved.status);
-      showFeedback(section, id, saved.status);
+
+      // Revalida en vivo contra los valores correctos ACTUALES (no confía ciegamente en el
+      // status que se guardó la primera vez) — así, si se corrige una pregunta con datos
+      // erróneos, las respuestas ya guardadas se autocorrigen solas al volver a entrar,
+      // sin que el estudiante tenga que volver a escribir nada.
+      const type = inputEl.dataset.type;
+      let liveStatus = saved.status;
+      if(type === 'numeric'){
+        liveStatus = checkNumeric(saved.value, parseFloat(inputEl.dataset.correct));
+      } else if(type === 'choice'){
+        liveStatus = checkChoice(saved.value, inputEl.dataset.correct);
+      } else if(type === 'keywords' && inputEl.dataset.groups){
+        const groups = JSON.parse(inputEl.dataset.groups);
+        const minLength = parseInt(inputEl.dataset.minlength || '3');
+        liveStatus = checkKeywords(saved.value, groups, 1, minLength);
+      }
+      currentProgress[section][id].status = liveStatus;
+      const prevBest = currentProgress[section][id].bestStatus;
+      if(!prevBest || STATUS_RANK[liveStatus] > STATUS_RANK[prevBest]){
+        currentProgress[section][id].bestStatus = liveStatus;
+      }
+      const statusToShow = currentProgress[section][id].bestStatus || liveStatus;
+      applyStatusClass(inputEl, statusToShow);
+      showFeedback(section, id, statusToShow);
     }
   });
 
