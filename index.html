@@ -1448,45 +1448,47 @@ function renderTema14(){
 }
 
 /* ============================= 1.5 REGISTRAR DATOS ============================= */
-const T15_ROW_DATA = [
-  {masa:30, fuerza:0.294, pos:6.18, alarg:1.18},
-  {masa:35, fuerza:0.343, pos:6.37, alarg:1.37},
-  {masa:40, fuerza:0.392, pos:6.57, alarg:1.57},
-  {masa:45, fuerza:0.441, pos:6.77, alarg:1.77},
-  {masa:50, fuerza:0.490, pos:6.96, alarg:1.96},
-  {masa:55, fuerza:0.540, pos:7.16, alarg:2.16},
-  {masa:null, fuerza:null, pos:7.90, alarg:2.90},
-];
+// Constante real del Muelle 1, confirmada con los datos que reportan los estudiantes desde
+// el simulador real (educaplus.org): k ≈ 25 N/m, longitud natural ≈ 5.00 cm.
+const T15_HOOKE_K = 25;
+const T15_HOOKE_L0 = 5.00;
+const T15_FREE_ROWS = 6; // filas donde el estudiante elige libremente qué masa colgar
+const T15_RETO = { pos: 7.90, alarg: 2.90 }; // fila reto: a partir de esto, deducir la masa
 
 function buildT15TableQuestions(){
   const qs = [];
-  T15_ROW_DATA.forEach((row, i)=>{
-    const n = i+1;
-    qs.push({level:2, id:`t15_r${n}_masa`, short:`Fila ${n} · Masa (g)`, type: row.masa===null?'open':'numeric'});
-    qs.push({level:2, id:`t15_r${n}_fuerza`, short:`Fila ${n} · Fuerza (N)`, type: row.fuerza===null?'open':'numeric'});
+  for(let n=1; n<=T15_FREE_ROWS; n++){
+    qs.push({level:2, id:`t15_r${n}_masa`, short:`Fila ${n} · Masa elegida (g)`, type:'open'});
+    qs.push({level:2, id:`t15_r${n}_fuerza`, short:`Fila ${n} · Fuerza (N)`, type:'numeric'});
     qs.push({level:2, id:`t15_r${n}_pos`, short:`Fila ${n} · Posición (cm)`, type:'numeric'});
     qs.push({level:2, id:`t15_r${n}_alarg`, short:`Fila ${n} · Alargamiento (cm)`, type:'numeric'});
-  });
+  }
+  const r = T15_FREE_ROWS+1;
+  qs.push({level:2, id:`t15_r${r}_masa`, short:`Fila ${r} (reto) · Masa deducida (g)`, type:'open'});
+  qs.push({level:2, id:`t15_r${r}_fuerza`, short:`Fila ${r} (reto) · Fuerza deducida (N)`, type:'open'});
+  qs.push({level:2, id:`t15_r${r}_pos`, short:`Fila ${r} (reto) · Posición dada (cm)`, type:'numeric'});
+  qs.push({level:2, id:`t15_r${r}_alarg`, short:`Fila ${r} (reto) · Alargamiento dado (cm)`, type:'numeric'});
   return qs;
 }
 
 function buildT15TableHtml(){
-  const cell = (id, val, ph)=>{
-    if(val===null){
-      return `<td><input type="text" data-section="t15" data-id="${id}" data-type="open" placeholder="${ph}"></td>`;
-    }
-    return `<td><input type="text" data-section="t15" data-id="${id}" data-type="numeric" data-correct="${val}" placeholder="${ph}"></td>`;
-  };
   const header = `<tr><th>Masa (g)</th><th>Fuerza (N)</th><th>Posición (cm)</th><th>Alargamiento (cm)</th></tr>`;
-  const rows = T15_ROW_DATA.map((row,i)=>{
-    const n = i+1;
-    return `<tr>
-      ${cell(`t15_r${n}_masa`, row.masa, row.masa===null?'?':'g')}
-      ${cell(`t15_r${n}_fuerza`, row.fuerza, row.fuerza===null?'?':'N')}
-      ${cell(`t15_r${n}_pos`, row.pos, 'cm')}
-      ${cell(`t15_r${n}_alarg`, row.alarg, 'cm')}
+  let rows = '';
+  for(let n=1; n<=T15_FREE_ROWS; n++){
+    rows += `<tr>
+      <td><input type="text" data-section="t15" data-id="t15_r${n}_masa" data-type="t15masa" placeholder="g (la que tú elijas)"></td>
+      <td><input type="text" data-section="t15" data-id="t15_r${n}_fuerza" data-type="t15calc" data-target="fuerza" placeholder="N"></td>
+      <td><input type="text" data-section="t15" data-id="t15_r${n}_pos" data-type="t15calc" data-target="pos" placeholder="cm"></td>
+      <td><input type="text" data-section="t15" data-id="t15_r${n}_alarg" data-type="t15calc" data-target="alarg" placeholder="cm"></td>
     </tr>`;
-  }).join('');
+  }
+  const r = T15_FREE_ROWS+1;
+  rows += `<tr>
+    <td><input type="text" data-section="t15" data-id="t15_r${r}_masa" data-type="open" placeholder="?"></td>
+    <td><input type="text" data-section="t15" data-id="t15_r${r}_fuerza" data-type="open" placeholder="?"></td>
+    <td><input type="text" data-section="t15" data-id="t15_r${r}_pos" data-type="numeric" data-correct="${T15_RETO.pos}" placeholder="cm"></td>
+    <td><input type="text" data-section="t15" data-id="t15_r${r}_alarg" data-type="numeric" data-correct="${T15_RETO.alarg}" placeholder="cm"></td>
+  </tr>`;
   return `<table class="data-entry-table">${header}${rows}</table>`;
 }
 
@@ -1526,7 +1528,7 @@ function renderTema15(){
   </div>
 
   <div class="level-header lvl-2"><div class="badge">2</div><div class="txt"><b>NIVEL 2 · PRACTICO</b><span>Registra tus propios datos en el simulador</span></div></div>
-  <p class="hint">Entra al simulador (botón de arriba), elige "Muelle 1" y cuelga las masas indicadas. Registra lo que veas en cada columna. La última fila es un reto: encuentra qué masa produce esa posición y alargamiento.</p>
+  <p class="hint">Entra al simulador (botón de arriba), elige "Muelle 1" y cuelga <b>6 masas distintas que tú elijas</b> (por ejemplo, sube de 5 en 5 gramos desde donde quieras empezar). Registra en cada fila exactamente lo que veas en el simulador. La última fila es un reto: encuentra qué masa produce esa posición y alargamiento.</p>
   <div class="question">
     ${buildT15TableHtml()}
   </div>
@@ -2046,6 +2048,11 @@ function bindInputsWithin(root){
         const groups = JSON.parse(inputEl.dataset.groups);
         const minLength = parseInt(inputEl.dataset.minlength || '3');
         liveStatus = checkKeywords(saved.value, groups, 1, minLength);
+      } else if(type === 't15masa'){
+        const num = parseFloat((saved.value||'').replace(',','.'));
+        liveStatus = (!isNaN(num) && num > 0) ? 'registrado' : 'revisar';
+      } else if(type === 't15calc'){
+        liveStatus = checkT15Calc(inputEl);
       }
       currentProgress[section][id].status = liveStatus;
       const prevBest = currentProgress[section][id].bestStatus;
@@ -2135,6 +2142,15 @@ function handleAnswer(inputEl){
     const groups = JSON.parse(inputEl.dataset.groups);
     const minLength = parseInt(inputEl.dataset.minlength || '3');
     status = checkKeywords(value, groups, 1, minLength);
+  } else if(type==='t15masa'){
+    value = inputEl.value.trim();
+    if(value==='') return;
+    const num = parseFloat(value.replace(',','.'));
+    status = (!isNaN(num) && num > 0) ? 'registrado' : 'revisar';
+  } else if(type==='t15calc'){
+    value = inputEl.value.trim();
+    if(value==='') return;
+    status = checkT15Calc(inputEl);
   } else { // open
     value = inputEl.value.trim();
     if(value==='') return;
@@ -2150,9 +2166,53 @@ function handleAnswer(inputEl){
 
   applyStatusClass(inputEl, status);
   showFeedback(section, id, status);
+
+  // Si cambió la masa de una fila libre del Tema 1.5, revalida en vivo las celdas
+  // dependientes de esa misma fila (Fuerza, Posición, Alargamiento) que ya tengan algo escrito,
+  // ya que su corrección depende de la masa que el propio estudiante eligió.
+  if(type === 't15masa'){
+    ['fuerza','pos','alarg'].forEach(target=>{
+      const sibId = id.replace('_masa', '_'+target);
+      const sibEl = document.querySelector('[data-id="'+sibId+'"]');
+      if(sibEl && sibEl.value.trim() !== ''){
+        const sibStatus = checkT15Calc(sibEl);
+        const sibExisting = currentProgress.t15[sibId] && currentProgress.t15[sibId].bestStatus;
+        currentProgress.t15[sibId] = {value: sibEl.value.trim(), status: sibStatus, ...(sibExisting ? {bestStatus: sibExisting} : {})};
+        applyStatusClass(sibEl, sibStatus);
+        showFeedback('t15', sibId, sibStatus);
+      }
+    });
+  }
+
   updateProgressBar();
   currentProgress.meta.overallPct = computeOverallProgress(currentProgress);
   saveProgress(currentStudent.email, currentProgress).then(handleSaveResult);
+}
+
+// Valida Fuerza/Posición/Alargamiento de una fila libre del Tema 1.5 contra la masa que el
+// propio estudiante escribió en esa misma fila (no contra un valor fijo), usando la constante
+// real del resorte. Si todavía no hay una masa válida en esa fila, queda pendiente ("revisar").
+function checkT15Calc(inputEl){
+  const id = inputEl.dataset.id;
+  const m = id.match(/^t15_r(\d+)_/);
+  if(!m) return 'incorrecto';
+  const masaEl = document.querySelector('[data-id="t15_r'+m[1]+'_masa"]');
+  const masaVal = masaEl ? parseFloat((masaEl.value||'').replace(',','.')) : NaN;
+  if(isNaN(masaVal) || masaVal <= 0) return 'revisar';
+
+  const val = parseFloat((inputEl.value||'').replace(',','.'));
+  if(isNaN(val)) return 'incorrecto';
+
+  const fuerzaEsperada = masaVal * 9.8 / 1000;
+  const alargEsperado = (fuerzaEsperada / T15_HOOKE_K) * 100;
+  const posEsperada = alargEsperado + T15_HOOKE_L0;
+
+  const target = inputEl.dataset.target;
+  let expected, tol;
+  if(target === 'fuerza'){ expected = fuerzaEsperada; tol = 0.01; }
+  else if(target === 'alarg'){ expected = alargEsperado; tol = 0.05; }
+  else { expected = posEsperada; tol = 0.05; }
+  return Math.abs(val - expected) <= tol ? 'correcto' : 'incorrecto';
 }
 
 function applyStatusClass(inputEl, status){
